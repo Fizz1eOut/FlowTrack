@@ -1,0 +1,100 @@
+:root {
+  /* === Colors === */
+  --background: #ffffff;
+  --text-primary: #0b1222;
+  --text-secondary: #6c757d;
+  --underlay: #fafafa;
+
+  /* === UI === */
+  --primary: #0f9d8a;
+  --primary-hover: #22c7a9;
+  --accent: #6c63ff;
+  --surface: #f4f5f7;
+  --border: #e5e7eb;
+
+  /* === Status === */
+  --success: #22c55e;
+  --warning: #facc15;
+  --critical: #f97316;
+  --error: #ef4444;
+
+  /* === Gradients === */
+  --gradient-primary: linear-gradient(135deg, #0f9d8a, #22c7a9);
+  --gradient-accent: linear-gradient(135deg, #6c63ff, #9b8bff);
+  --gradient-subtle: linear-gradient(180deg, #ffffff, #f8f9fa);
+
+  /* === Shadows === */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
+  --shadow-glow: 0 0 20px rgba(15, 157, 138, 0.3);
+
+  /* === Transitions === */
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* === Typography === */
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-base: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 20px;
+  --fs-2xl: 24px;
+  --fs-3xl: 30px;
+
+  --fw-normal: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  --lh-tight: 1.25;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.75;
+
+  /* === Spacing === */
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 16px;
+  --gap-lg: 24px;
+  --gap-xl: 32px;
+
+  /* === Radius === */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 50%;
+}
+
+/* === Dark Mode === */
+/* .dark {
+  --background: #0b0f17;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --underlay: #141a23;
+
+  --primary: #22c7a9;
+  --primary-hover: #3ce0be;
+  --accent: #6c63ff;
+  --border: #1f2937;
+  --surface: #1f2937;
+
+  --success: #22c55e;
+  --warning: #facc15;
+  --critical: #f97316;
+  --error: #991b1b;
+
+  --gradient-primary: linear-gradient(135deg, #22c7a9, #3ce0be);
+  --gradient-accent: linear-gradient(135deg, #6c63ff, #9b8bff);
+  --gradient-subtle: linear-gradient(180deg, #141a23, #0b0f17);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 30px rgba(34, 199, 169, 0.4);
+} */
