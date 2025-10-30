@@ -42,7 +42,7 @@ body {
 
 body {
   background-color: var(--background);
-  font-size: var(--font-size-xs);
+  font-size: var(--fs-sm);
   font-weight: var(--font-weight-normal);
   color: var(--text-primary);
   font-family: "Roboto", sans-serif;
