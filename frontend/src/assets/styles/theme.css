@@ -1,9 +1,8 @@
 :root {
   /* === Colors === */
-  --background: #ffffff;
-  --text-primary: #0b1222;
-  --text-secondary: #6c757d;
-  --underlay: #fafafa;
+  --color-white: #ffffff;
+  --color-black: #0b1222;
+  --color-gray: #6c757d;
 
   /* === UI === */
   --primary: #0f9d8a;
@@ -35,7 +34,7 @@
   /* === Typography === */
   --fs-xs: 12px;
   --fs-sm: 14px;
-  --fs-base: 16px;
+  --fs-md: 16px;
   --fs-lg: 18px;
   --fs-xl: 20px;
   --fs-2xl: 24px;
