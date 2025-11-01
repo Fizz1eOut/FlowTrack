@@ -10,8 +10,8 @@
   .subtitle {
     font-family: "Roboto", sans-serif;
     font-size: var(--fs-2xl);
-    font-weight: var(--fw-semibold);
-    color: var(--color-white);  
+    font-weight: var(--fw-medium);
+    color: var(--color-black);  
   } 
   @media (max-width: 768px) {
     .subtitle {

@@ -11,7 +11,7 @@
     font-family: "Roboto", sans-serif;
     font-size: var(--fs-3xl);
     font-weight: var(--fw-bold);
-    color: var(--color-white);  
+    color: var(--color-black);  
   } 
   @media (max-width: 768px) {
     .title {

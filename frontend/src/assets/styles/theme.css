@@ -17,6 +17,13 @@
   --critical: #f97316;
   --error: #ef4444;
 
+  /* === blur === */
+  --primary-bg: rgba(15, 157, 138, 0.1);
+  --accent-bg: rgba(108, 99, 255, 0.1);
+  --success-bg: rgba(34, 197, 94, 0.1);
+
+  --blur-effect: blur(20px);
+
   /* === Gradients === */
   --gradient-primary: linear-gradient(135deg, #0f9d8a, #22c7a9);
   --gradient-accent: linear-gradient(135deg, #6c63ff, #9b8bff);
@@ -55,7 +62,7 @@
   --space-md: 16px;
   --space-lg: 24px;
   --space-xl: 32px;
-  --space-2xl: 48px;
+  --space-2xl: 40px;
 
   --gap-xs: 4px;
   --gap-sm: 8px;
