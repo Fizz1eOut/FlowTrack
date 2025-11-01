@@ -43,7 +43,7 @@
   }
 
   .button-primary {
-    height: var(--space-xl);
+    height: var(--space-2xl);
     color: var(--color-white);
     background-color: var(--primary);
     border-radius: var(--radius-sm);
@@ -55,7 +55,7 @@
   }
 
   .button-secondary {
-    height: var(--space-xl);
+    height: var(--space-2xl);
     border: 1px solid var(--border);
     color: var(--color-black);
     background-color: var(--red-500);
