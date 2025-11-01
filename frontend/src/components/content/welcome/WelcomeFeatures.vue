@@ -104,4 +104,12 @@
   :deep(.underlay) {
     height: 100%;
   }
+  @media (max-width: 640px) {
+    .welcome-features__list {
+      flex-wrap: wrap;
+    }
+    .welcome-features__item {
+      flex: 1 1 100%;
+    }
+  }
 </style>
