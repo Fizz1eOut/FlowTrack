@@ -34,6 +34,13 @@
     <div class="auth__submit">
       <app-button primary>Sign In</app-button>
     </div>
+
+    <div class="auth__footer">
+      Don't have an account?
+      <router-link to="/signup">
+        <app-link>Create an account</app-link>
+      </router-link>
+    </div>
   </auth-form>
 </template>
 
@@ -46,6 +53,14 @@
   }
   .auth__name {
     color: var(--color-dark);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-normal);
+  }
+  .auth__footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
     font-size: var(--fs-sm);
     font-weight: var(--fw-normal);
   }
