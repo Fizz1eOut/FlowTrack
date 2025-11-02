@@ -13,7 +13,7 @@
   font-family: "Roboto", sans-serif;
   font-size: var(--fs-sm);
   font-weight: var(--fw-normal);
-  color: var(--color-black);
+  color: var(--primary);
   transition: all color 0.3s ease-in-out;
   cursor: pointer;
 }
