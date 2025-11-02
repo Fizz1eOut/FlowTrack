@@ -1,38 +1,134 @@
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { ref, computed } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { useAuthStore } from '@/stores/authStore';
+  import type { LoginFormValues } from '@/interface/auth.interface';
   import AuthForm from '@/components/content/auth/AuthForm.vue';
   import AppInput from '@/components/inputs/AppInput.vue';
   import AppCheckbox from '@/components/inputs/AppCheckbox.vue';
   import AppButton from '@/components/base/AppButton.vue';
   import AppLink from '@/components/base/AppLink.vue';
+  import AppIcon from '@/components/base/AppIcon.vue';
+  import { useForm, useField } from 'vee-validate';
+  import * as yup from 'yup';
 
-  const email = ref('');
-  const password = ref('');
-  const remember = ref(false);
+  const router = useRouter();
+  const authStore = useAuthStore();
 
-  const submit = () => {
-    console.log({ email: email.value, password: password.value, remember: remember.value });
+  const validationSchema = yup.object({
+    email: yup.string()
+      .required('Enter your email')
+      .email('Invalid email format'),
+    password: yup.string().required('Enter your password').min(6, 'At least 6 characters'),
+    acceptTerms: yup
+      .boolean()
+      .oneOf([true], 'You must accept the terms')
+      .required('You must accept the terms'),
+  });
+
+  const loginError = ref<string | null>(null);
+  const loading = ref(false);
+
+  const { handleSubmit } = useForm<LoginFormValues>({ 
+    validationSchema 
+  });
+
+  const { value: email, errorMessage: emailError } = useField<string>('email', undefined, { initialValue: '' });
+  const { value: password, errorMessage: passwordError } = useField<string>('password', undefined, { initialValue: '' });
+  const { value: acceptTerms, errorMessage: acceptTermsError } = useField<boolean>('acceptTerms', undefined, { initialValue: false });
+
+  const hasError = computed(() => !!emailError.value || !!passwordError.value || !!acceptTermsError.value);
+
+  const onSubmit = handleSubmit(async (values: LoginFormValues) => {
+    loginError.value = null;
+  
+    try {
+      loading.value = true;
+    
+      const result = await authStore.signIn({
+        email: values.email,
+        password: values.password,
+      });
+
+      if (!result.success) {
+        loginError.value = result.error ?? 'Login error';
+      } else {
+        if (values.remember) {
+          localStorage.setItem('rememberMe', 'true');
+        }
+      
+        router.push({ name: 'dashboard' });
+      }
+    } catch (err: unknown) {
+      loginError.value = err instanceof Error ? err.message : 'Unknown error';
+    } finally {
+      loading.value = false;
+    }
+  });
+
+  const showPassword = ref(false);
+  const togglePasswordVisibility = () => {
+    showPassword.value = !showPassword.value;
   };
 </script>
 
 <template>
-  <auth-form @submit="submit">
+  <auth-form @submit="onSubmit">
     <div class="auth__item">
       <div class="auth__name">Email</div>
-      <app-input v-model="email" type="email" placeholder="Enter your email" />
+      <app-input 
+        v-model="email"
+        placeholder="Email"
+        :class="{ 'has-error': emailError }" 
+      />
+      <span class="error-message">{{ emailError }}</span>
     </div>
     <div class="auth__item">
       <div class="auth__name">Password</div>
-      <app-input v-model="password" type="password" placeholder="Enter your password" />
+      <app-input 
+        v-model="password" 
+        :type="showPassword ? 'text' : 'password'" 
+        placeholder="Password" 
+        :class="{ 'has-error': passwordError }" 
+      />
+      <app-button 
+        type="button"
+        class="toggle-password" 
+        @click="togglePasswordVisibility"
+      >
+        <app-icon 
+          :name="showPassword ? 'eye-off' : 'eye'" 
+          size="20px" 
+          color="var(--color-black)" 
+        />
+      </app-button>
+      <span class="error-message">{{ passwordError }}</span>
     </div>
 
-    <div class="auth__options">
-      <app-checkbox v-model="remember">Remember me</app-checkbox>
-      <app-link>Forgot password?</app-link>
+    <div class="auth__item">
+      <app-checkbox 
+        v-model="acceptTerms"
+        :class="{ 'has-error': acceptTermsError }"
+      >
+        I accept the terms of use and privacy policy
+      </app-checkbox>
+      <span v-if="acceptTermsError" class="error-message checkbox-error">
+        {{ acceptTermsError }}
+      </span>
     </div>
 
     <div class="auth__submit">
-      <app-button primary>Sign In</app-button>
+      <app-button 
+        type="submit"
+        :primary="!hasError"
+        :disabled="hasError || loading"
+      >
+        {{ loading ? 'Signing in...' : 'Sign In' }}
+      </app-button>
+      
+      <div v-if="loginError" class="error-login">
+        {{ loginError }}
+      </div>
     </div>
 
     <div class="auth__footer">
@@ -45,6 +141,9 @@
 </template>
 
 <style scoped>
+  .auth__item {
+    position: relative;
+  }
   .auth__options { 
     display: flex;
     justify-content: space-between;
@@ -63,5 +162,32 @@
     gap: 6px;
     font-size: var(--fs-sm);
     font-weight: var(--fw-normal);
+  }
+  .toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 28px;
+    width: 20px;
+    height: 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+  }
+  .has-error :deep(.input) {
+    border: 1px solid var(--error);
+    border-radius: var(--radius-sm);
+  }
+   .has-error :deep(.checkbox__checkmark) {
+    border: 1px solid var(--error);
+  }
+  .error-message {
+    color: var(--error);
+    font-size: 12px;
+  }
+  .error-login {
+    text-align: center;
+    color: var(--error);
+    font-size: 16px;
   }
 </style>

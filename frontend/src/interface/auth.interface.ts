@@ -11,6 +11,19 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface LoginFormValues {
+  email: string;
+  password: string;
+  remember: boolean;
+}
+
+export interface SignUpFormValues {
+  fullName: string;
+  email: string;
+  password: string;
+  acceptTerms: boolean;
+}
+
 export interface CustomAuthResponse {
   success: boolean;
   data?: string | { user: User | null; session: Session | null } | null;
