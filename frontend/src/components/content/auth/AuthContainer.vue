@@ -24,8 +24,8 @@
 
 <style scoped>
   .auth {
+    margin-top: 100px;
     width: 100%;
-    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -52,5 +52,10 @@
     color: var(--color-gray);
     font-size: var(--fs-md);
     font-weight: var(--fw-normal);
+  }
+  @media (max-width: 480px) {
+    .auth {
+      margin-top: var(--space-2xl);
+    }
   }
 </style>
