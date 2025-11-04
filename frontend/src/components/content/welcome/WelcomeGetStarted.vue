@@ -18,10 +18,12 @@
         </p>
 
         <div class="get-started__button">
-          <app-button primary class="btn">
-            Create account
-            <app-icon name="arrow-right" size="20" color="var(--color-white)" />
-          </app-button>
+          <router-link to="/signup">
+            <app-button primary class="btn">
+              Create account
+              <app-icon name="arrow-right" size="20" color="var(--color-white)" />
+            </app-button>
+          </router-link>
         </div>
       </div>
     </app-container>

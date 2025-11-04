@@ -2,6 +2,8 @@
   import AppTitle from '@/components/base/AppTitle.vue';
   import AppSubtitle from '@/components/base/AppSubtitle.vue';
   import AppButton from '@/components/base/AppButton.vue';
+
+
 </script>
 
 <template>
@@ -12,7 +14,9 @@
       <p class="welcome-hero__text">Turn everyday tasks into an exciting game. Earn XP, maintain your streak, and achieve your goals with FlowTrack.</p>
 
       <div class="welcome-hero__button">
-        <app-button to="/" primary class="btn">Get Started</app-button>
+        <router-link to="/signin">
+          <app-button primary class="btn">Get Started</app-button>
+        </router-link>
       </div>
     </div>
   </div>

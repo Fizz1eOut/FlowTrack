@@ -3,7 +3,7 @@ import type { User, Session } from '@supabase/supabase-js';
 export interface RegisterCredentials {
   email: string;
   password: string;
-  fullName: string;
+  name: string;
 }
 
 export interface LoginCredentials {
@@ -18,7 +18,7 @@ export interface LoginFormValues {
 }
 
 export interface SignUpFormValues {
-  fullName: string;
+  name: string;
   email: string;
   password: string;
   acceptTerms: boolean;
