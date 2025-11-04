@@ -36,7 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
         password: credentials.password,
         options: {
           data: {
-            full_name: credentials.fullName,
+            full_name: credentials.name,
           },
         },
       });
@@ -56,7 +56,7 @@ export const useAuthStore = defineStore('auth', () => {
         } 
       };
     } catch (err) {
-      const errorMessage = (err as AuthError).message || 'Ошибка регистрации';
+      const errorMessage = (err as AuthError).message || 'Registration error';
       error.value = errorMessage;
       return { success: false, error: errorMessage };
     } finally {
@@ -89,34 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
         } 
       };
     } catch (err) {
-      const errorMessage = (err as AuthError).message || 'Ошибка входа';
-      error.value = errorMessage;
-      return { success: false, error: errorMessage };
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  const signInWithMagicLink = async (email: string): Promise<CustomAuthResponse> => {
-    try {
-      loading.value = true;
-      error.value = null;
-
-      const { error: magicLinkError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/FlowTrack/#/auth/callback`,
-        },
-      });
-
-      if (magicLinkError) throw magicLinkError;
-
-      return {
-        success: true,
-        data: 'Проверьте почту! Мы отправили ссылку для входа.'
-      };
-    } catch (err) {
-      const errorMessage = (err as AuthError).message || 'Ошибка отправки Magic Link';
+      const errorMessage = (err as AuthError).message || 'Login error';
       error.value = errorMessage;
       return { success: false, error: errorMessage };
     } finally {
@@ -140,7 +113,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       return { success: true, data: null };
     } catch (err) {
-      const errorMessage = (err as AuthError).message || 'Ошибка OAuth';
+      const errorMessage = (err as AuthError).message || 'OAuth error';
       error.value = errorMessage;
       return { success: false, error: errorMessage };
     } finally {
@@ -159,7 +132,7 @@ export const useAuthStore = defineStore('auth', () => {
       session.value = null;
       needsOnboarding.value = false;
     } catch (err) {
-      const msg = (err as AuthError).message || 'Ошибка выхода';
+      const msg = (err as AuthError).message || 'Login error';
       error.value = msg;
       console.error('[AuthStore] signOut error:', msg);
     } finally {
@@ -180,10 +153,10 @@ export const useAuthStore = defineStore('auth', () => {
 
       return { 
         success: true, 
-        data: 'Проверьте почту для сброса пароля' 
+        data: 'Check your email to reset your password.' 
       };
     } catch (err) {
-      const errorMessage = (err as AuthError).message || 'Ошибка сброса пароля';
+      const errorMessage = (err as AuthError).message || 'Password reset error';
       error.value = errorMessage;
       return { success: false, error: errorMessage };
     } finally {
@@ -204,10 +177,10 @@ export const useAuthStore = defineStore('auth', () => {
 
       return { 
         success: true, 
-        data: 'Пароль успешно обновлён' 
+        data: 'Password updated successfully' 
       };
     } catch (err) {
-      const errorMessage = (err as AuthError).message || 'Ошибка обновления пароля';
+      const errorMessage = (err as AuthError).message || 'Password update error';
       error.value = errorMessage;
       return { success: false, error: errorMessage };
     } finally {
@@ -228,7 +201,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       return user.value;
     } catch (err) {
-      const msg = (err as AuthError).message || 'Ошибка получения пользователя';
+      const msg = (err as AuthError).message || 'Error getting user';
       error.value = msg;
       console.error('[AuthStore] getCurrentUser error:', msg);
       return null;
@@ -256,7 +229,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const completeOnboarding = async (data: OnboardingData): Promise<CustomAuthResponse> => {
     if (!user.value) {
-      return { success: false, error: 'Пользователь не авторизован' };
+      return { success: false, error: 'The user is not authorized' };
     }
 
     try {
@@ -288,10 +261,10 @@ export const useAuthStore = defineStore('auth', () => {
 
       return { 
         success: true, 
-        data: 'Onboarding завершён' 
+        data: 'Onboarding completed' 
       };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Ошибка завершения onboarding';
+      const errorMessage = err instanceof Error ? err.message : 'Termination error onboarding';
       error.value = errorMessage;
       return { success: false, error: errorMessage };
     } finally {
@@ -347,7 +320,6 @@ export const useAuthStore = defineStore('auth', () => {
     clearError,
     signUp,
     signIn,
-    signInWithMagicLink,
     signInWithOAuth,
     signOut,
     resetPassword,
