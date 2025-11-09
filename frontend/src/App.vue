@@ -1,11 +1,18 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+  import { RouterView } from 'vue-router';
+  import AppContainer from '@/components/base/AppContainer.vue';
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <main class="main">
+    <app-container>
+      <router-view />
+    </app-container>
+  </main>
 </template>
 
-<style scoped></style>
+<style scoped>
+.main {
+  padding-bottom: 80px;
+}
+</style>
