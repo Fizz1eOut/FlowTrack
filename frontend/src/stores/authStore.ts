@@ -6,7 +6,6 @@ import type {
   LoginCredentials, 
   RegisterCredentials, 
   CustomAuthResponse,
-  OnboardingData 
 } from '@/interface/auth.interface';
 
 export const useAuthStore = defineStore('auth', () => {
@@ -227,7 +226,43 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  const completeOnboarding = async (data: OnboardingData): Promise<CustomAuthResponse> => {
+  const createWorkspace = async (workspaceType: 'personal' | 'team'): Promise<CustomAuthResponse> => {
+    if (!user.value) {
+      return { success: false, error: 'The user is not authorized' };
+    }
+
+    try {
+      loading.value = true;
+      error.value = null;
+
+      const workspaceName = workspaceType === 'personal' ? 'Personal' : 'Team Workspace';
+
+      const { error: workspaceError } = await supabase.from('workspaces').insert({
+        name: workspaceName,
+        type: workspaceType,
+        owner_id: user.value.id,
+      });
+
+      if (workspaceError) throw workspaceError;
+
+      return { 
+        success: true, 
+        data: 'Workspace created successfully' 
+      };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create workspace';
+      error.value = errorMessage;
+      return { success: false, error: errorMessage };
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const updateWorkSettings = async (data: {
+    workHoursStart: string;
+    workHoursEnd: string;
+    timezone: string;
+  }): Promise<CustomAuthResponse> => {
     if (!user.value) {
       return { success: false, error: 'The user is not authorized' };
     }
@@ -247,24 +282,14 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (profileError) throw profileError;
 
-      const workspaceName = data.workspaceName || (data.workspaceType === 'personal' ? 'Personal' : 'Team Workspace');
-
-      const { error: workspaceError } = await supabase.from('workspaces').insert({
-        name: workspaceName,
-        type: data.workspaceType,
-        owner_id: user.value.id,
-      });
-
-      if (workspaceError) throw workspaceError;
-
       needsOnboarding.value = false;
 
       return { 
         success: true, 
-        data: 'Onboarding completed' 
+        data: 'Settings updated successfully' 
       };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Termination error onboarding';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update settings';
       error.value = errorMessage;
       return { success: false, error: errorMessage };
     } finally {
@@ -325,7 +350,8 @@ export const useAuthStore = defineStore('auth', () => {
     resetPassword,
     updatePassword,
     getCurrentUser,
-    completeOnboarding,
+    createWorkspace,
+    updateWorkSettings,
     initialize,
   };
 });
