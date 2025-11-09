@@ -5,6 +5,7 @@
   import AppContainer from '@/components/base/AppContainer.vue';
   import AppUnderlay from '@/components/base/AppUnderlay.vue';
   import AppRadioButton from '@/components/inputs/AppRadioButton.vue';
+  import AppSubtitle from '@/components/base/AppSubtitle.vue';
 
   const authStore = useAuthStore();
   const workspaceType = ref<'personal' | 'team' | null>(null);
@@ -43,7 +44,13 @@
 <template>
   <div class="workspace">
     <app-underlay>
-      <app-container size="md">
+      <app-container size="lg">
+        <div class="workspace__header">
+          <app-subtitle>
+            Select the workspace type
+          </app-subtitle>
+          <p class="workspace__text">This will help us customize FlowTrack to suit your needs.</p>
+        </div>
         <div class="workspace__body">
           <div class="workspace__item">
             <app-radio-button
@@ -89,5 +96,13 @@
   } 
   .workspace__item:not(:last-child) {
     margin-bottom: var(--space-xs);
+  }
+  .workspace__header {
+    margin-bottom: var(--space-lg);
+  }
+  .workspace__text {
+    margin-top: var(--space-xs);
+    font-size: var(--fs-md);
+    color: var(--color-gray);
   }
 </style>
