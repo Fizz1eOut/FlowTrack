@@ -3,6 +3,7 @@
   import moment from 'moment-timezone';
   import { useAuthStore } from '@/stores/authStore';
   import { useRouter } from 'vue-router';
+  import { showToast } from '@/stores/toastStore';
   import AppButton from '@/components/base/AppButton.vue';
   import AppContainer from '@/components/base/AppContainer.vue';
   import AppUnderlay from '@/components/base/AppUnderlay.vue';
@@ -53,6 +54,7 @@
     }
 
     router.push({ name: 'dashboard' });
+    showToast('Setup is complete! Welcome to FlowTrack.', 'success');
   };
 </script>
 
