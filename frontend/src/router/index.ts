@@ -6,7 +6,9 @@ import WelcomeView from '@/views/WelcomeView.vue';
 import SignUpView from '@/views/SignUpView.vue';
 import SignInView from '@/views/SignInView.vue';
 import OnboardingView from '@/views/OnboardingView.vue';
-import DashboardView from '@/views/DashboardView.vue';
+import DashboardLayoutView from '@/views/DashboardLayoutView.vue';
+
+import TodayView from '@/views/dashboard/TodayView.vue';
 
 const scrollBehavior: RouterScrollBehavior = (to, from, savedPosition) => {
   if (savedPosition) {
@@ -21,10 +23,22 @@ const routes: RouteRecordRaw[] = [
   { path: '/', name: 'welcome', component: WelcomeView, meta: { title: 'Welcome to FlowTrack', requiresAuth: false, guestOnly: true } },
   { path: '/signup', name: 'signup', component: SignUpView, meta: { title: 'Sign Up', requiresAuth: false, guestOnly: true } },
   { path: '/signin', name: 'signin', component: SignInView, meta: { title: 'Sign In', requiresAuth: false, guestOnly: true } },
-  {path: '/onboarding', name: 'onboarding', component: OnboardingView, meta: { title: 'Get Started', requiresAuth: true } },
-  { path: '/dashboard', name: 'dashboard', component: DashboardView, meta: { title: 'Dashboard', requiresAuth: true } },
+  { path: '/onboarding', name: 'onboarding', component: OnboardingView, meta: { title: 'Get Started', requiresAuth: true } },
+  { path: '/dashboard', name: 'dashboard', component: DashboardLayoutView, meta: { title: 'Dashboard', requiresAuth: true } },
+
+  {
+    path: '/dashboard',
+    component: DashboardLayoutView,
+    meta: { requiresAuth: true, title: 'Dashboard' },
+    children: [
+      { path: '', redirect: '/dashboard/today' },
+      { path: 'today', name: 'today', component: TodayView, meta: { title: 'Today' } },
+    ],
+  },
+  
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ];
+
 
 const router = createRouter({
   history: createWebHashHistory('/FlowTrack'),
@@ -57,18 +71,16 @@ router.beforeEach(async (to, from, next) => {
       return next({ name: 'onboarding' });
     } else {
       console.log('[Router] Redirect to dashboard - onboarding complete');
-      return next({ name: 'dashboard' });
+      return next({ name: 'today' });
     }
   }
 
   if (to.name === 'onboarding' && !needsOnboarding) {
     console.log('[Router] Redirect to dashboard - onboarding already done');
-    return next({ name: 'dashboard' });
+    return next({ name: 'today' });
   }
 
   next();
 });
-
-
 
 export default router;
