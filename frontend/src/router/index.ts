@@ -44,6 +44,7 @@ router.beforeEach(async (to, from, next) => {
   const isAuthenticated = authStore.isAuthenticated;
   const requiresAuth = to.meta.requiresAuth;
   const guestOnly = to.meta.guestOnly;
+  const needsOnboarding = authStore.needsOnboarding;
 
   if (requiresAuth && !isAuthenticated) {
     console.log('[Router] Redirect to signin - auth required');
@@ -51,10 +52,23 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (guestOnly && isAuthenticated) {
-    console.log('[Router] Redirect to dashboard - already authenticated');
-    return next({ name: 'onboarding' });
+    if (needsOnboarding) {
+      console.log('[Router] Redirect to onboarding - onboarding required');
+      return next({ name: 'onboarding' });
+    } else {
+      console.log('[Router] Redirect to dashboard - onboarding complete');
+      return next({ name: 'dashboard' });
+    }
   }
+
+  if (to.name === 'onboarding' && !needsOnboarding) {
+    console.log('[Router] Redirect to dashboard - onboarding already done');
+    return next({ name: 'dashboard' });
+  }
+
   next();
 });
+
+
 
 export default router;
