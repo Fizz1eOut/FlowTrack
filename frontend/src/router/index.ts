@@ -7,6 +7,8 @@ import SignUpView from '@/views/SignUpView.vue';
 import SignInView from '@/views/SignInView.vue';
 import OnboardingView from '@/views/OnboardingView.vue';
 import DashboardLayoutView from '@/views/DashboardLayoutView.vue';
+import ForgotPasswordView from '@/views/ForgotPasswordView.vue';
+import ResetPasswordView from '@/views/ResetPasswordView.vue';
 
 import TodayView from '@/views/dashboard/TodayView.vue';
 
@@ -25,6 +27,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/signin', name: 'signin', component: SignInView, meta: { title: 'Sign In', requiresAuth: false, guestOnly: true } },
   { path: '/onboarding', name: 'onboarding', component: OnboardingView, meta: { title: 'Get Started', requiresAuth: true } },
   { path: '/dashboard', name: 'dashboard', component: DashboardLayoutView, meta: { title: 'Dashboard', requiresAuth: true } },
+  { path: '/forgot-password', name: 'forgot-password', component: ForgotPasswordView, meta: { title: 'Forgot password', requiresAuth: false } },
+  { path: '/reset-password', name: 'reset-password', component: ResetPasswordView, meta: { title: 'Reset password', requiresAuth: false } },
 
   {
     path: '/dashboard',
