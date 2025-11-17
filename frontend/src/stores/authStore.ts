@@ -145,9 +145,9 @@ export const useAuthStore = defineStore('auth', () => {
       error.value = null;
 
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/FlowTrack/#/auth/reset-password`,
+        redirectTo: `${window.location.origin}/FlowTrack/#/reset-password`
       });
-
+      console.log(`${window.location.origin}/FlowTrack/#/reset-password`);
       if (resetError) throw resetError;
 
       return { 
@@ -300,14 +300,19 @@ export const useAuthStore = defineStore('auth', () => {
   const initialize = async (): Promise<void> => {
     await getCurrentUser();
 
+    // ИСПРАВЛЕНИЕ: делаем обработчик неблокирующим
     supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, currentSession: Session | null) => {
       console.log('[Auth] State changed:', event);
 
+      // Обновляем состояние немедленно, без await
       user.value = currentSession?.user || null;
       session.value = currentSession;
 
+      // Запускаем checkOnboardingStatus асинхронно, не блокируя обработчик
       if (event === 'SIGNED_IN' && currentSession?.user) {
-        await checkOnboardingStatus();
+        checkOnboardingStatus().catch(err => {
+          console.error('[Auth] checkOnboardingStatus failed:', err);
+        });
       }
 
       if (event === 'SIGNED_OUT') {
