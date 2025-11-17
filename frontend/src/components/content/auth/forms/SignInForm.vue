@@ -12,6 +12,7 @@
   import { useForm, useField } from 'vee-validate';
   import * as yup from 'yup';
 
+  const rememberMe = ref();
   const router = useRouter();
   const authStore = useAuthStore();
 
@@ -20,10 +21,6 @@
       .required('Enter your email')
       .email('Invalid email format'),
     password: yup.string().required('Enter your password').min(6, 'At least 6 characters'),
-    acceptTerms: yup
-      .boolean()
-      .oneOf([true], 'You must accept the terms')
-      .required('You must accept the terms'),
   });
 
   const loginError = ref<string | null>(null);
@@ -35,9 +32,8 @@
 
   const { value: email, errorMessage: emailError } = useField<string>('email', undefined, { initialValue: '' });
   const { value: password, errorMessage: passwordError } = useField<string>('password', undefined, { initialValue: '' });
-  const { value: acceptTerms, errorMessage: acceptTermsError } = useField<boolean>('acceptTerms', undefined, { initialValue: false });
 
-  const hasError = computed(() => !!emailError.value || !!passwordError.value || !!acceptTermsError.value);
+  const hasError = computed(() => !!emailError.value || !!passwordError.value);
 
   const onSubmit = handleSubmit(async (values: LoginFormValues) => {
     loginError.value = null;
@@ -53,7 +49,7 @@
       if (!result.success) {
         loginError.value = result.error ?? 'Login error';
       } else {
-        if (values.remember) {
+        if (rememberMe.value) {
           localStorage.setItem('rememberMe', 'true');
         }
       
@@ -106,15 +102,19 @@
     </div>
 
     <div class="auth__item">
-      <app-checkbox 
-        v-model="acceptTerms"
-        :class="{ 'has-error': acceptTermsError }"
-      >
-        I accept the terms of use and privacy policy
-      </app-checkbox>
-      <span v-if="acceptTermsError" class="error-message checkbox-error">
-        {{ acceptTermsError }}
-      </span>
+      <div class="auth__row">
+        <app-checkbox 
+          v-model="rememberMe"
+        >
+          Remember me
+        </app-checkbox>
+
+        <router-link to="/forgot-password">
+          <app-link>
+            Forgot password?
+          </app-link>
+        </router-link>
+      </div>
     </div>
 
     <div class="auth__submit">
@@ -143,6 +143,13 @@
 <style scoped>
   .auth__item {
     position: relative;
+  }
+  .auth__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
   }
   .auth__options { 
     display: flex;
