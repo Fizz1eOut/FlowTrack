@@ -23,31 +23,58 @@
 
 <template>
   <div class="input-wrapper">
-    <slot name="icon-before"></slot>
-    <input 
+    <div class="icon-before">
+      <slot name="icon-before"></slot>
+    </div>
+
+    <input
       v-model="inputValue"
       :type="type || 'text'"
-      class="input" 
+      class="input"
       :placeholder="placeholder"
       @input="handleInput"
     />
-    <label for="#" class="label" ></label>
-    <slot name="icon-after"></slot>
+
+    <div class="icon-after">
+      <slot name="icon-after"></slot>
+    </div>
   </div>
+
 </template>
 
 <style scoped>
+  .input-wrapper {
+    position: relative;
+    width: 100%;
+  }
   .input {
     width: 100%;
     padding: 10px 30px;
     font-size: var(--space-md);
-    font-weight: var(--fw-normal);
     color: var(--color-black);
     background-color: var(--color-white);
     border-radius: var(--radius-sm);
     border: 1px solid var(--border);
     box-shadow: var(--shadow-lg);
     outline: none;
+  }
+  .icon-before {
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+  .icon-after {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    pointer-events: none;
   }
   ::-webkit-input-placeholder {
     color: var(--color-gray);
