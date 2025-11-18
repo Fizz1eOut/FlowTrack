@@ -3,6 +3,7 @@
   import AppSubtitle from '@/components/base/AppSubtitle.vue';
   import AppButton from '@/components/base/AppButton.vue';
   import AppContainer from '@/components/base/AppContainer.vue';
+  import AppIcon from '@/components/base/AppIcon.vue';
 
   interface AppSidebarProps {
     isOpen?: boolean;
@@ -16,9 +17,18 @@
     <app-container class="sidebar__container">
       <div class="sidebar__body">
         <div class="sidebar__group">
-          <app-subtitle v-if="isOpen" class="title">
-            FlowTrack
-          </app-subtitle>
+          <div v-if="isOpen" class="sidebar__row">
+            <app-subtitle>
+              FlowTrack
+            </app-subtitle>
+            <app-button class="sidebar__btn" @click="emit('close')">
+              <app-icon 
+                name="sidebar"
+                size="var(--fs-xl)"
+                color="var(--color-dark)"
+              />
+            </app-button>
+          </div>
           <app-nav @menu-click="emit('close')" :is-open="isOpen" />
         </div>
 
@@ -43,5 +53,36 @@
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
+  }
+  .sidebar__btn {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar__row {
+      padding-top: 10px;
+    }
+    .sidebar__container {
+      padding: 0;
+    }
+  }
+  @media (max-width: 480px) {
+    .sidebar__row {
+      padding-top: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .sidebar__btn {
+      margin-right: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      max-width: 30px;
+      height: 30px;
+      background-color: var(--accent);
+      border-radius: var(--radius-sm);
+    }
   }
 </style>
