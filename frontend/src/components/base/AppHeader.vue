@@ -5,6 +5,7 @@
   import AppTimeTracker from '@/components/base/AppTimeTracker.vue';
   import AppNotificationBell from '@/components/base/AppNotificationBell.vue';
   import AppProfile from '@/components/base/AppProfile.vue';
+  import TaskCreateModal from '@/components/content/tasks/TaskCreateModal.vue';
 
   const emit = defineEmits<{ toggleSidebar: [] }>();
 </script>
@@ -38,14 +39,7 @@
         </div>
 
         <div class="header__actions">
-          <app-button primary class="header__create-btn">
-            <app-icon 
-              name="plus"
-              size="var(--fs-md)"
-              color="var(--color-dark)"
-            />
-            Create
-          </app-button>
+          <task-create-modal />
 
           <app-profile />
         </div>
@@ -104,18 +98,6 @@
   }
   .header__item:hover {
     background-color: var(--accent);
-  }
-  .header__create-btn {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    width: 100px;
-  }
-  @media (max-width: 768px) {
-    .header__create-btn {
-      display: none;
-    }
   }
   @media (max-width: 600px) {
     .header__search {
