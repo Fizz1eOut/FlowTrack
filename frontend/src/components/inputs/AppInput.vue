@@ -2,7 +2,7 @@
   import { computed } from 'vue';
 
   interface SearchInputProps {
-    modelValue: string;
+    modelValue: string | number;
     placeholder?: string;
     type?: string;
   }
@@ -39,7 +39,6 @@
       <slot name="icon-after"></slot>
     </div>
   </div>
-
 </template>
 
 <style scoped>
