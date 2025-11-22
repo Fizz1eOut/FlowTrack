@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { ref } from 'vue';
   import AppModal from '@/components/base/AppModal.vue';
-  import TaskForm from '@/components/content/tasks/TaskForm.vue';
+  import TaskCreateForm from '@/components/content/tasks/TaskCreateForm.vue';
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
 
@@ -10,11 +10,15 @@
   const openModal = () => {
     isOpen.value = true;
   };
+
+  const closeModal = () => {
+    isOpen.value = false;
+  };
 </script>
 
 <template>
-  <div class="task-create">
-    <app-button primary class="task-create__btn" @click="openModal">
+  <div class="task-create-modal">
+    <app-button primary class="task-create-modal__btn" @click="openModal">
       <app-icon 
         name="plus"
         size="var(--fs-md)"
@@ -23,14 +27,18 @@
       Create
     </app-button>
 
-    <app-modal :model-value="isOpen" @update:model-value="isOpen = $event">
-      <task-form />
+    <app-modal 
+      :model-value="isOpen" 
+      @update:model-value="isOpen = $event" 
+      :scrollable="true"
+    >
+      <task-create-form @close="closeModal"  />
     </app-modal>
   </div>
 </template>
 
 <style scoped>
-  .task-create__btn {
+  .task-create-modal__btn {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -38,7 +46,7 @@
     width: 100px;
   }
   @media (max-width: 768px) {
-    .task-create__btn {
+    .task-create-modal__btn {
       display: none;
     }
   }
