@@ -28,17 +28,7 @@ export const useTasksStore = defineStore('tasks', () => {
           is_recurring: input.is_recurring || false,
           original_task_id: input.original_task_id || null,
         })
-        .select(`
-          *,
-          workspace:workspaces!workspace_id (
-            id,
-            name,
-            type,
-            color,
-            icon
-          ),
-          subtasks (*)
-        `)
+        .select('*, workspace:workspaces!workspace_id(id,name,type), subtasks(*)')
         .single();
       if (createError) throw createError;
 
