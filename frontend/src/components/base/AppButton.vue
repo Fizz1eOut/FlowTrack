@@ -71,7 +71,7 @@
 
   .button-disabled {
     height: 36px;
-    background-color: var(--color-white);
+    background-color: var(--color-gray);
     border-radius: 10px;
     opacity: 0.3;
     transition: background-color 0.4s ease-in-out, opacity 0.4s ease-in-out;
@@ -79,6 +79,6 @@
   }
   .button-disabled:hover {
     opacity: 0.4;
-    background-color: var(--text-secondary);
+    background-color: var(--color-gray);
   }
 </style>
