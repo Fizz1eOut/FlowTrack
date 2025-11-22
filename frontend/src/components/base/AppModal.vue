@@ -4,6 +4,8 @@
 
   interface ModalProps {
     modelValue?: boolean;
+    scrollable?: boolean;
+    contentClass?: string;
   }
   withDefaults(defineProps<ModalProps>(), {
     modelValue: false
@@ -27,9 +29,9 @@
         <div class="overlay" @click.self="close">
           <div class="content">
             <app-underlay>
-              <app-container size="sm" class="modal-container">
+              <app-container size="xl" class="modal-container">
 
-                <div class="content__body">
+                <div class="content__body" :class="['content', contentClass, { scrollable }]">
                   <slot ></slot>
                 </div>
               </app-container>
@@ -60,6 +62,20 @@
     border-radius: var(--radius-md);
     max-width: 700px;
     width: 100%;
+  }
+  .content.scrollable {
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+  }
+  .your-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .your-scroll-container::-webkit-scrollbar-thumb {
+    background-color: var(--color-gray);
+    border-radius: var(--radius-sm);
+  }
+  .your-scroll-container::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-black);
   }
   @media (max-width: 499px) {
     .modal-container {
