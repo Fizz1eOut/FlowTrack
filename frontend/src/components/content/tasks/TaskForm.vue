@@ -9,6 +9,7 @@
   import TaskFormDue from '@/components/content/tasks/TaskFormDue.vue';
   import TaskFormTags from '@/components/content/tasks/TaskFormTags.vue';
   import TaskFormRecurring from '@/components/content/tasks/TaskFormRecurring.vue';
+  import TaskFormSubtasks from '@/components/content/tasks/TaskFormSubtasks.vue';
   import { useWorkspaceStore } from '@/stores/workspaceStore';
   import type { CreateTaskInput } from '@/interface/task.interface';
 
@@ -30,11 +31,13 @@
     estimate_minutes: 120,
     tags: [],
     is_recurring: false,
+    subtasks: []
   });
 
   const isValid = computed(() => {
     return !!(
       formData.title.trim() && 
+      formData.description.trim() &&
       formData.workspace_id
     );
   });
@@ -46,21 +49,25 @@
 </script>
 
 <template>
-  <div class="task-form">
+  <form @submit.prevent class="task-form">
     <div class="task-form__header">
       <div class="task-form__item">
         <div class="task-form__name">Task name</div>
+        <div v-if="!formData.title.trim()" class="task-form__error-text">Required field</div>
         <app-input 
           v-model="formData.title"
           placeholder="Enter task name"
+          :class="{error: !formData.title.trim()}"
         />
       </div>
       <div class="task-form__item">
         <div class="task-form__name">Description</div>
+        <div v-if="!formData.description.trim()" class="task-form__error-text">Required field</div>
         <app-textarea 
           v-model="formData.description"
           placeholder="Enter task description"
           :rows="4"
+          :class="{error: !formData.description.trim()}"
         />
       </div>
     </div>
@@ -99,8 +106,12 @@
           v-model="formData.is_recurring" 
         />
       </div>
+
+      <div class="task-form__item">
+        <task-form-subtasks v-model="formData.subtasks" />
+      </div>
     </div>
-  </div>
+  </form>
 </template>
 
 <style scoped>
@@ -126,6 +137,16 @@
   }
   .task-form__item {
     width: 100%;
+  }
+  .error {
+    border: 1px solid var(--error);
+    border-radius: var(--radius-sm);
+  }
+  .task-form__error-text {
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-normal);
+    margin-bottom: var(--space-xs);
+    color: var(--error);
   }
   @media (max-width: 480px) {
     .task-form__field {

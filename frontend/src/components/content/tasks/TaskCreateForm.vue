@@ -21,6 +21,10 @@
   }
 
   async function handleCreateTask() {
+    if (!formValid.value) {
+      showToast('Please fill in all required fields', 'error');
+      return;
+    }
     if (!formData.value) {
       showToast('No form data', 'error');
       return;
@@ -72,6 +76,7 @@
       <app-button 
         secondary 
         @click="$emit('close')"
+        type="button"
       >
         Cancel
       </app-button>
@@ -79,6 +84,7 @@
         primary 
         @click="handleCreateTask" 
         :disabled="!formValid"
+        type="button"
       >
         Create Task
       </app-button>
