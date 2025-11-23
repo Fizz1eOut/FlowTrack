@@ -3,7 +3,7 @@
   import AppTitle from '@/components/base/AppTitle.vue';
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
-  import TaskForm from '@/components/content/tasks/TaskForm.vue';
+  import TaskForm from '@/components/content/tasks/form/TaskForm.vue';
   import { showToast } from '@/stores/toastStore';
   import { useTasksStore } from '@/stores/taskStore';
   import type { CreateTaskInput } from '@/interface/task.interface';

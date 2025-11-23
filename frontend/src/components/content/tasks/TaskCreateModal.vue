@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { ref } from 'vue';
   import AppModal from '@/components/base/AppModal.vue';
-  import TaskCreateForm from '@/components/content/tasks/TaskCreateForm.vue';
+  import TaskCreateForm from '@/components/content/tasks/form/TaskCreateForm.vue';
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
 

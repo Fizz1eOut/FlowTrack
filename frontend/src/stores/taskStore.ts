@@ -15,7 +15,6 @@ export const useTasksStore = defineStore('tasks', () => {
     return tasks.value.filter(task => task.due_date === today);
   });
 
-  // Задачи по статусу
   const todoTasks = computed(() => {
     return tasks.value.filter(task => task.status === 'todo');
   });

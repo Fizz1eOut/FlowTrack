@@ -2,14 +2,14 @@
   import { reactive, watchEffect, computed } from 'vue';
   import AppInput from '@/components/inputs/AppInput.vue';
   import AppTextarea from '@/components/inputs/AppTextarea.vue';
-  import TaskFormProject from '@/components/content/tasks/TaskFormProject.vue';
-  import TaskFormStatus from '@/components/content/tasks/TaskFormStatus.vue';
-  import TaskFormPriority from '@/components/content/tasks/TaskFormPriority.vue';
-  import TaskFormEstimate from '@/components/content/tasks/TaskFormEstimate.vue';
-  import TaskFormDue from '@/components/content/tasks/TaskFormDue.vue';
-  import TaskFormTags from '@/components/content/tasks/TaskFormTags.vue';
-  import TaskFormRecurring from '@/components/content/tasks/TaskFormRecurring.vue';
-  import TaskFormSubtasks from '@/components/content/tasks/TaskFormSubtasks.vue';
+  import TaskFormProject from '@/components/content/tasks/form/TaskFormProject.vue';
+  import TaskFormStatus from '@/components/content/tasks/form/TaskFormStatus.vue';
+  import TaskFormPriority from '@/components/content/tasks/form/TaskFormPriority.vue';
+  import TaskFormEstimate from '@/components/content/tasks/form/TaskFormEstimate.vue';
+  import TaskFormDue from '@/components/content/tasks/form/TaskFormDue.vue';
+  import TaskFormTags from '@/components/content/tasks/form/TaskFormTags.vue';
+  import TaskFormRecurring from '@/components/content/tasks/form/TaskFormRecurring.vue';
+  import TaskFormSubtasks from '@/components/content/tasks/form/TaskFormSubtasks.vue';
   import { useWorkspaceStore } from '@/stores/workspaceStore';
   import type { CreateTaskInput } from '@/interface/task.interface';
 
