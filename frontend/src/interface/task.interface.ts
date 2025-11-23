@@ -49,6 +49,7 @@ export interface CreateTaskInput {
   tags: string[];
   is_recurring: boolean;
   original_task_id?: string | null;
+  subtasks: string[];
 }
 
 export interface UpdateTaskInput {

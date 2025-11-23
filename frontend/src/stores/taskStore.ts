@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { supabase } from '@/utils/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { TaskResponse, CreateTaskInput } from '@/interface/task.interface';
@@ -10,9 +10,23 @@ export const useTasksStore = defineStore('tasks', () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
+  const todayTasks = computed(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return tasks.value.filter(task => task.due_date === today);
+  });
+
+  // Задачи по статусу
+  const todoTasks = computed(() => {
+    return tasks.value.filter(task => task.status === 'todo');
+  });
+
+  const completedTasks = computed(() => {
+    return tasks.value.filter(task => task.status === 'done');
+  });
+
   const createTask = async (input: CreateTaskInput): Promise<TaskResponse | null> => {
     try {
-      const { data, error: createError } = await supabase
+      const { data: task, error: createError } = await supabase
         .from('tasks')
         .insert({
           title: input.title,
@@ -28,12 +42,47 @@ export const useTasksStore = defineStore('tasks', () => {
           is_recurring: input.is_recurring || false,
           original_task_id: input.original_task_id || null,
         })
-        .select('*, workspace:workspaces!workspace_id(id,name,type), subtasks(*)')
+        .select()
         .single();
+
       if (createError) throw createError;
 
-      tasks.value.unshift(data);
-      return data;
+      if (input.subtasks && input.subtasks.length > 0) {
+        const subtasksToInsert = input.subtasks.map((title, index) => ({
+          task_id: task.id,
+          title,
+          completed: false,
+          position: index
+        }));
+
+        const { error: subtasksError } = await supabase
+          .from('subtasks')
+          .insert(subtasksToInsert);
+
+        if (subtasksError) {
+          console.error('[TasksStore] Subtasks create error:', subtasksError);
+        }
+      }
+
+      const { data: taskWithSubtasks, error: fetchError } = await supabase
+        .from('tasks')
+        .select(`
+        *,
+        workspace:workspaces!workspace_id (
+          id,
+          name,
+          type
+        ),
+        subtasks (*)
+      `)
+        .eq('id', task.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      tasks.value.unshift(taskWithSubtasks);
+      return taskWithSubtasks;
+
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       error.value = message;
@@ -134,6 +183,10 @@ export const useTasksStore = defineStore('tasks', () => {
     tasks,
     loading,
     error,
+
+    todayTasks,
+    todoTasks,
+    completedTasks,
 
     createTask,
     fetchTasks,

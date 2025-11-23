@@ -57,6 +57,9 @@
     box-shadow: var(--shadow-lg);
     outline: none;
   }
+  .input:focus {
+    border-color: var(--primary);
+  }
   .icon-before {
     position: absolute;
     top: 50%;
