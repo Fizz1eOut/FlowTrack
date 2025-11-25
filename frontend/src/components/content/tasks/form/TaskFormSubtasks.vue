@@ -16,27 +16,29 @@
   const newSubtaskTitle = ref('');
   const checked = ref<boolean[]>(subtasks.value.map(() => false));
 
-  watch(() => props.modelValue, (newVal) => {
-    subtasks.value = [...newVal];
-    checked.value = newVal.map(() => false);
-  }, { deep: true });
-
-  watch(subtasks, (newVal) => {
-    emit('update:modelValue', newVal);
-  }, { deep: true });
+  watch(
+    () => props.modelValue,
+    (newVal) => {
+      subtasks.value = [...newVal];
+      checked.value = newVal.map(() => false);
+    },
+    { immediate: true }
+  );
 
   const addSubtask = () => {
     const title = newSubtaskTitle.value.trim();
     if (title) {
       subtasks.value.push(title);
-      newSubtaskTitle.value = '';
       checked.value.push(false);
+      newSubtaskTitle.value = '';
+      emit('update:modelValue', [...subtasks.value]);
     }
   };
 
   const removeSubtask = (index: number) => {
     subtasks.value.splice(index, 1);
     checked.value.splice(index, 1);
+    emit('update:modelValue', [...subtasks.value]);
   };
 
   const handleKeydown = (e: KeyboardEvent) => {

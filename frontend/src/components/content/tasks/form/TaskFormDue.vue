@@ -5,6 +5,7 @@
   interface Props {
     dueDate: string | null;
     dueTime: string | null;
+    recurring: boolean
   }
 
   const props = defineProps<Props>();
@@ -15,13 +16,15 @@
   }>();
 
   onMounted(() => {
+    if (props.recurring) return;
+
     if (!props.dueDate) {
       const now = new Date();
       const parts = now.toISOString().split('T');
       const defaultDate = parts[0] ?? '';
       emit('update:dueDate', defaultDate);
     }
-  
+
     if (!props.dueTime) {
       emit('update:dueTime', '12:00');
     }
@@ -40,7 +43,7 @@
 
 <template>
   <div class="task-form-due">
-    <div class="task-form-due__field">
+    <div v-if="!recurring" class="task-form-due__field">
       <div class="task-form-due__name">Date</div>
       <app-input
         type="date"
