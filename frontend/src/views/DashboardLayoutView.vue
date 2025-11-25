@@ -1,10 +1,9 @@
 <script setup lang="ts">
-  import { ref, computed, onMounted } from 'vue';
+  import { ref, computed } from 'vue';
   import { RouterView } from 'vue-router';
   import AppSidebar from '@/components/base/AppSidebar.vue';
   import AppHeader from '@/components/base/AppHeader.vue';
   import AppContainer from '@/components/base/AppContainer.vue';
-  import { useTasksStore  } from '@/stores/taskStore';
 
   const isSidebarOpen = ref(false);
 
@@ -12,12 +11,6 @@
     'sidebar': true,
     'sidebar--open': isSidebarOpen.value,
   }));
-
-  const taskStore = useTasksStore ();
-
-  onMounted(() => {
-    taskStore.checkRecurringTasks();
-  });
 </script>
 
 <template>

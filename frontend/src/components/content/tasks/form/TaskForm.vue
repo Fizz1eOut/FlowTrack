@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { reactive, watchEffect, computed } from 'vue';
+  import { reactive, watch, computed } from 'vue';
   import AppInput from '@/components/inputs/AppInput.vue';
   import AppTextarea from '@/components/inputs/AppTextarea.vue';
   import TaskFormProject from '@/components/content/tasks/form/TaskFormProject.vue';
@@ -34,18 +34,32 @@
     subtasks: []
   });
 
+  const submitData = computed<CreateTaskInput>(() => {
+    return {
+      ...formData,
+      due_date: formData.is_recurring ? null : formData.due_date
+    };
+  });
+
   const isValid = computed(() => {
     return !!(
       formData.title.trim() && 
-      formData.description.trim() &&
       formData.workspace_id
     );
   });
 
-  watchEffect(() => {
-    emit('update', formData);
-    emit('validation', !!isValid.value);
-  });
+  watch(
+    formData,
+    () => {
+      emit('update', submitData.value);
+    },
+    { deep: true }
+  );
+
+  watch(
+    () => isValid.value,
+    (value) => emit('validation', value)
+  );
 </script>
 
 <template>
@@ -62,12 +76,10 @@
       </div>
       <div class="task-form__item">
         <div class="task-form__name">Description</div>
-        <div v-if="!formData.description.trim()" class="task-form__error-text">Required field</div>
         <app-textarea 
           v-model="formData.description"
           placeholder="Enter task description"
           :rows="4"
-          :class="{error: !formData.description.trim()}"
         />
       </div>
     </div>
@@ -92,6 +104,7 @@
 
       <div class="task-form__item">
         <task-form-due 
+          :recurring="formData.is_recurring"
           v-model:due-date="formData.due_date" 
           v-model:due-time="formData.due_time"
         />

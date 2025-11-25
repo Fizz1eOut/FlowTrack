@@ -4,12 +4,15 @@
   import AppContainer from '@/components/base/AppContainer.vue';
   import AppToast from '@/components/base/AppToast.vue';
   import { useWorkspaceStore } from '@/stores/workspaceStore';
+  import { useTasksStore  } from '@/stores/taskStore';
 
   const workspaceStore = useWorkspaceStore();
-  onMounted(() => {
-    workspaceStore.fetchWorkspaces();
-  });
+  const taskStore = useTasksStore ();
 
+  onMounted(async () => {
+    await workspaceStore.fetchWorkspaces();
+    await taskStore.checkRecurringTasks();
+  });
 </script>
 
 <template>
