@@ -1,16 +1,34 @@
 <script setup lang="ts">
+  import { watch } from 'vue';
   import AppSelect from '@/components/inputs/AppSelect.vue';
 
-  defineProps<{ modelValue: string }>();
+  const props = defineProps<{ modelValue: string }>();
   const emit = defineEmits(['update:modelValue']);
+
+  const allowedStatuses = ['todo', 'in_progress', 'done'];
+
+  watch(
+    () => props.modelValue,
+    (val) => {
+      if (!allowedStatuses.includes(val)) {
+        emit('update:modelValue', 'todo');
+      }
+    },
+    { immediate: true }
+  );
 
   const options = [
     { label: 'To Do', value: 'todo' },
     { label: 'In Progress', value: 'in_progress' },
     { label: 'Done', value: 'done' },
     { label: 'Planned', value: 'planned' },
-    { label: 'Backlog', value: 'backlog' },
+    { label: 'Backlog', value: 'backlog' }
   ];
+
+  function onChange(val: unknown) {
+    const str = typeof val === 'string' ? val : 'todo';
+    emit('update:modelValue', allowedStatuses.includes(str) ? str : 'todo');
+  }
 </script>
 
 <template>
@@ -21,7 +39,7 @@
       :options="options"
       label-key="label"
       value-key="value"
-      @update:model-value="val => emit('update:modelValue', val)"
+      @update:model-value="onChange"
     />
   </div>
 </template>
