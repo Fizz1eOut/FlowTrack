@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { supabase } from '@/utils/supabase';
 import { useAuthStore } from '@/stores/authStore';
-import type { TaskResponse, CreateTaskInput } from '@/interface/task.interface';
+import type { TaskResponse, CreateTaskInput, UpdateTaskInput } from '@/interface/task.interface';
 
 export const useTasksStore = defineStore('tasks', () => {
   const authStore = useAuthStore();
@@ -24,9 +24,8 @@ export const useTasksStore = defineStore('tasks', () => {
     });
   });
 
-
   const todoTasks = computed(() => {
-    return tasks.value.filter(task => task.status === 'todo');
+    return tasks.value.filter(task => task.status === 'backlog');
   });
 
   const completedTasks = computed(() => {
@@ -35,22 +34,24 @@ export const useTasksStore = defineStore('tasks', () => {
 
   const createTask = async (input: CreateTaskInput): Promise<TaskResponse | null> => {
     try {
+      const taskData = {
+        title: input.title,
+        description: input.description || null,
+        user_id: authStore.userId,
+        workspace_id: input.workspace_id,
+        due_date: input.is_recurring ? null : (input.due_date || null),
+        due_time: input.due_time || null,
+        priority: input.priority || 'medium',
+        status: input.status || 'backlog',
+        estimate_minutes: input.estimate_minutes || null,
+        tags: input.tags || null,
+        is_recurring: input.is_recurring || false,
+        original_task_id: null,
+      };
+
       const { data: task, error: createError } = await supabase
         .from('tasks')
-        .insert({
-          title: input.title,
-          description: input.description || null,
-          user_id: authStore.userId,
-          workspace_id: input.workspace_id,
-          due_date: input.due_date || null,
-          due_time: input.due_time || null,
-          priority: input.priority || 'medium',
-          status: input.status || 'todo',
-          estimate_minutes: input.estimate_minutes || null,
-          tags: input.tags || null,
-          is_recurring: input.is_recurring || false,
-          original_task_id: null,
-        })
+        .insert(taskData)
         .select()
         .single();
 
@@ -67,22 +68,21 @@ export const useTasksStore = defineStore('tasks', () => {
         await supabase.from('subtasks').insert(subtasksToInsert);
       }
 
-      const { data: taskWithSubtasks } = await supabase
-        .from('tasks')
-        .select(`
-        *,
-        workspace:workspaces!workspace_id (id, name, type),
-        subtasks (*)
-      `)
-        .eq('id', task.id)
-        .single();
+      if (input.is_recurring) {
+        await createTodayRecurringCopy(task.id);
+      }
 
       await fetchTasks();
 
-      if (input.is_recurring) {
-        await checkRecurringTasks();
-        await fetchTasks();
-      }
+      const { data: taskWithSubtasks } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          workspace:workspaces!workspace_id (id, name, type),
+          subtasks (*)
+        `)
+        .eq('id', task.id)
+        .single();
 
       return taskWithSubtasks;
 
@@ -94,6 +94,68 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   };
 
+  async function createTodayRecurringCopy(templateTaskId: string): Promise<void> {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data: templateTask, error: fetchError } = await supabase
+        .from('tasks')
+        .select('*, subtasks(*)')
+        .eq('id', templateTaskId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const { data: existingCopy } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('original_task_id', templateTaskId)
+        .gte('due_date', `${today}T00:00:00.000Z`)
+        .lt('due_date', `${today}T23:59:59.999Z`)
+        .maybeSingle();
+
+      if (existingCopy) {
+        console.log('[TasksStore] Today copy already exists');
+        return;
+      }
+
+      const { data: newTask, error: insertError } = await supabase
+        .from('tasks')
+        .insert({
+          title: templateTask.title,
+          description: templateTask.description,
+          user_id: templateTask.user_id,
+          workspace_id: templateTask.workspace_id,
+          due_date: today,
+          due_time: templateTask.due_time,
+          priority: templateTask.priority,
+          status: 'backlog',
+          estimate_minutes: templateTask.estimate_minutes,
+          tags: templateTask.tags,
+          is_recurring: true,
+          original_task_id: templateTaskId
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      if (templateTask.subtasks && templateTask.subtasks.length > 0) {
+        const subtasksToInsert = templateTask.subtasks.map((st: any) => ({
+          task_id: newTask.id,
+          title: st.title,
+          completed: false,
+          position: st.position
+        }));
+
+        await supabase.from('subtasks').insert(subtasksToInsert);
+      }
+
+      console.log('[TasksStore] Created today copy for recurring task');
+    } catch (err) {
+      console.error('[TasksStore] Error creating today copy:', err);
+    }
+  }
 
   async function fetchTasks(): Promise<TaskResponse[]> {
     loading.value = true;
@@ -103,10 +165,10 @@ export const useTasksStore = defineStore('tasks', () => {
       const { data, error: fetchError } = await supabase
         .from('tasks')
         .select(`
-        *,
-        workspace:workspaces!workspace_id (id, name, type),
-        subtasks (*)
-      `)
+          *,
+          workspace:workspaces!workspace_id (id, name, type),
+          subtasks (*)
+        `)
         .eq('user_id', authStore.userId)
         .or('is_recurring.eq.false,original_task_id.not.is.null')
         .order('created_at', { ascending: false });
@@ -132,8 +194,6 @@ export const useTasksStore = defineStore('tasks', () => {
     }
 
     try {
-      const today = new Date().toISOString().split('T')[0];
-
       const { data: recurringTasks, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
@@ -145,70 +205,15 @@ export const useTasksStore = defineStore('tasks', () => {
       if (!recurringTasks || recurringTasks.length === 0) return;
 
       for (const task of recurringTasks) {
-        const { data: todayCopy, error: copyError } = await supabase
-          .from('tasks')
-          .select('id')
-          .eq('original_task_id', task.id)
-          .gte('due_date', `${today}T00:00:00.000Z`)
-          .lt('due_date', `${today}T23:59:59.999Z`)
-          .maybeSingle();
-
-        if (copyError && copyError.code !== 'PGRST116') { 
-          throw copyError;
-        }
-
-        if (!todayCopy) {
-          const { data: newTask, error: insertError } = await supabase
-            .from('tasks')
-            .insert({
-              title: task.title,
-              description: task.description,
-              user_id: task.user_id,
-              workspace_id: task.workspace_id,
-              due_date: today,
-              due_time: task.due_time,
-              priority: task.priority,
-              status: 'todo',
-              estimate_minutes: task.estimate_minutes,
-              tags: task.tags,
-              is_recurring: true,
-              original_task_id: task.id
-            })
-            .select()
-            .single();
-
-          if (insertError) throw insertError;
-
-          const { data: originalSubtasks } = await supabase
-            .from('subtasks')
-            .select('*')
-            .eq('task_id', task.id);
-
-          if (originalSubtasks && originalSubtasks.length > 0) {
-            const subtasksToInsert = originalSubtasks.map(st => ({
-              task_id: newTask.id,
-              title: st.title,
-              completed: false,
-              position: st.position
-            }));
-
-            const { error: subtaskError } = await supabase
-              .from('subtasks')
-              .insert(subtasksToInsert);
-
-            if (subtaskError) throw subtaskError;
-          }
-        }
+        await createTodayRecurringCopy(task.id);
       }
-
-      await fetchTasks();
 
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       console.error('[TasksStore] Check recurring error:', message);
     }
   }
-  
+
   async function updateSubtask(
     subtaskId: string, 
     updates: { completed?: boolean }
@@ -220,6 +225,7 @@ export const useTasksStore = defineStore('tasks', () => {
         .eq('id', subtaskId);
 
       if (updateError) throw updateError;
+      
       tasks.value = tasks.value.map(task => ({
         ...task,
         subtasks: task.subtasks?.map(subtask => 
@@ -236,6 +242,101 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
+  async function updateTask(
+    taskId: string, 
+    input: UpdateTaskInput
+  ): Promise<TaskResponse | null> {
+    try {
+      const { data: currentTask } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', taskId)
+        .single();
+
+      if (!currentTask) throw new Error('Task not found');
+
+      const isRecurringCopy = currentTask.original_task_id !== null;
+      const targetTaskId = isRecurringCopy ? currentTask.original_task_id : taskId;
+
+      const updateData: any = {
+        title: input.title,
+        description: input.description,
+        workspace_id: input.workspace_id,
+        due_time: input.due_time,
+        priority: input.priority,
+        estimate_minutes: input.estimate_minutes,
+        tags: input.tags,
+        is_recurring: input.is_recurring
+      };
+
+      if (input.is_recurring || isRecurringCopy) {
+        updateData.due_date = null;
+      } else {
+        updateData.due_date = input.due_date;
+      }
+
+      if (isRecurringCopy && input.status !== currentTask.status) {
+        await supabase
+          .from('tasks')
+          .update({ status: input.status })
+          .eq('id', taskId);
+      }
+
+      const { data: updatedTask, error: updateError } = await supabase
+        .from('tasks')
+        .update(updateData)
+        .eq('id', targetTaskId)
+        .select(`
+        *,
+        workspace:workspaces!workspace_id (id, name, type),
+        subtasks (*)
+      `)
+        .single();
+
+      if (updateError) throw updateError;
+
+      if (input.subtasks !== undefined) {
+        await supabase
+          .from('subtasks')
+          .delete()
+          .eq('task_id', targetTaskId);
+
+        if (input.subtasks.length > 0) {
+          const subtasksToInsert = input.subtasks.map((title, index) => ({
+            task_id: targetTaskId,
+            title,
+            completed: false,
+            position: index
+          }));
+
+          await supabase.from('subtasks').insert(subtasksToInsert);
+        }
+      }
+
+      if (input.is_recurring || isRecurringCopy) {
+        const today = new Date().toISOString().split('T')[0];
+        await supabase
+          .from('tasks')
+          .delete()
+          .eq('original_task_id', targetTaskId)
+          .gte('due_date', `${today}T00:00:00.000Z`)
+          .lt('due_date', `${today}T23:59:59.999Z`);
+
+        await createTodayRecurringCopy(targetTaskId);
+      }
+
+      await fetchTasks();
+
+      return updatedTask;
+
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      error.value = message;
+      console.error('[TasksStore] Update error:', err);
+      return null;
+    }
+  }
+
   return {
     tasks,
     loading,
@@ -249,5 +350,6 @@ export const useTasksStore = defineStore('tasks', () => {
     fetchTasks,
     checkRecurringTasks,
     updateSubtask,
+    updateTask,
   };
 });
