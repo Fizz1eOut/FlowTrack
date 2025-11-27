@@ -5,29 +5,31 @@
   const props = defineProps<{ modelValue: string }>();
   const emit = defineEmits(['update:modelValue']);
 
-  const allowedStatuses = ['todo', 'in_progress', 'done'];
+  const allowedStatuses = ['backlog', 'planned', 'in_progress', 'done'];
 
   watch(
     () => props.modelValue,
     (val) => {
       if (!allowedStatuses.includes(val)) {
-        emit('update:modelValue', 'todo');
+        emit('update:modelValue', 'backlog');
       }
     },
     { immediate: true }
   );
 
   const options = [
-    { label: 'To Do', value: 'todo' },
-    { label: 'In Progress', value: 'in_progress' },
-    { label: 'Done', value: 'done' },
+    { label: 'Backlog', value: 'backlog' },
     { label: 'Planned', value: 'planned' },
-    { label: 'Backlog', value: 'backlog' }
+    { label: 'In Progress', value: 'in_progress' },
+    { label: 'Done', value: 'done' }
   ];
 
   function onChange(val: unknown) {
-    const str = typeof val === 'string' ? val : 'todo';
-    emit('update:modelValue', allowedStatuses.includes(str) ? str : 'todo');
+    const str = typeof val === 'string' ? val : 'backlog';
+    emit(
+      'update:modelValue',
+      allowedStatuses.includes(str) ? str : 'backlog'
+    );
   }
 </script>
 
