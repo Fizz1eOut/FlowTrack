@@ -187,6 +187,45 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
+  async function deleteTask(taskId: string): Promise<boolean> {
+    try {
+      const { data: taskToDelete } = await supabase
+        .from('tasks')
+        .select('original_task_id, is_recurring')
+        .eq('id', taskId)
+        .single();
+
+      if (!taskToDelete) throw new Error('Task not found');
+
+      const isRecurringTemplate = taskToDelete.is_recurring && !taskToDelete.original_task_id;
+
+      if (isRecurringTemplate) {
+        await supabase
+          .from('tasks')
+          .delete()
+          .eq('original_task_id', taskId);
+      }
+
+      const { error: deleteError } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (deleteError) throw deleteError;
+
+      tasks.value = tasks.value.filter(task => task.id !== taskId);
+
+      console.log('[TasksStore] Task deleted successfully');
+      return true;
+
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      error.value = message;
+      console.error('[TasksStore] Delete error:', err);
+      return false;
+    }
+  }
+
   async function checkRecurringTasks(): Promise<void> {
     if (!authStore.userId) {
       console.warn('[TasksStore] User not authenticated, skipping recurring check');
@@ -351,5 +390,6 @@ export const useTasksStore = defineStore('tasks', () => {
     checkRecurringTasks,
     updateSubtask,
     updateTask,
+    deleteTask
   };
 });
