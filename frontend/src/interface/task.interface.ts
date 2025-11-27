@@ -1,5 +1,5 @@
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
-export type TaskStatus = 'todo' | 'in_progress' | 'done';
+export type TaskStatus = 'backlog' | 'in_progress' | 'done';
 
 export interface Subtask {
   id: string;
@@ -55,12 +55,16 @@ export interface CreateTaskInput {
 export interface UpdateTaskInput {
   title: string;
   description: string;
+  workspace_id: string;
   due_date: string | null;
   due_time: string | null;
   priority: TaskPriority;
   status: TaskStatus;
-  estimate_minutes?: number;
+  estimate_minutes: number;
   tags: string[];
+  is_recurring: boolean;
+  original_task_id?: string | null;
+  subtasks: string[];
 }
 
 export interface CreateSubtaskInput {

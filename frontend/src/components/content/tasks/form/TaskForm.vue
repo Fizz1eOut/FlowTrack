@@ -11,7 +11,12 @@
   import TaskFormRecurring from '@/components/content/tasks/form/TaskFormRecurring.vue';
   import TaskFormSubtasks from '@/components/content/tasks/form/TaskFormSubtasks.vue';
   import { useWorkspaceStore } from '@/stores/workspaceStore';
-  import type { CreateTaskInput } from '@/interface/task.interface';
+  import type { TaskResponse, CreateTaskInput } from '@/interface/task.interface';
+
+  interface TaskFormProps {
+    task?: TaskResponse;
+  }
+  const props = defineProps<TaskFormProps>();
 
   const emit = defineEmits<{
     update: [data: CreateTaskInput]
@@ -21,17 +26,17 @@
   const workspaceStore = useWorkspaceStore();
 
   const formData = reactive<CreateTaskInput>({
-    title: '',
-    description: '',
-    workspace_id: workspaceStore.currentWorkspaceId || '',
-    due_date: null,
-    due_time: null,
-    priority: 'medium',
-    status: 'todo',
-    estimate_minutes: 120,
-    tags: [],
-    is_recurring: false,
-    subtasks: []
+    title: props.task?.title || '',
+    description: props.task?.description || '',
+    workspace_id: props.task?.workspace_id || workspaceStore.currentWorkspaceId || '',
+    due_date: props.task?.due_date || null,
+    due_time: props.task?.due_time || null,
+    priority: props.task?.priority || 'medium',
+    status: props.task?.status || 'backlog',
+    estimate_minutes: props.task?.estimate_minutes || 120,
+    tags: props.task?.tags || [],
+    is_recurring: props.task?.is_recurring || false,
+    subtasks: props.task?.subtasks?.map(s => s.title) || []
   });
 
   const submitData = computed<CreateTaskInput>(() => {
@@ -58,7 +63,8 @@
 
   watch(
     () => isValid.value,
-    (value) => emit('validation', value)
+    (value) => emit('validation', value),
+    { immediate: true }
   );
 </script>
 
