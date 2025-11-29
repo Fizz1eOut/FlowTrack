@@ -10,8 +10,15 @@
   const taskStore = useTasksStore ();
 
   onMounted(async () => {
-    await workspaceStore.fetchWorkspaces();
-    await taskStore.checkRecurringTasks();
+    try {
+      await workspaceStore.fetchWorkspaces();
+      await taskStore.checkRecurringTasks();
+      await taskStore.fetchTasks();
+      
+      console.log('[App] Initial data loaded');
+    } catch (error) {
+      console.error('[App] Error loading initial data:', error);
+    }
   });
 </script>
 

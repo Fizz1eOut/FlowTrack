@@ -1,0 +1,220 @@
+import { supabase } from '@/utils/supabase';
+import type { TaskResponse, CreateTaskInput, UpdateTaskInput } from '@/interface/task.interface';
+import { RecurringTaskService } from '@/services/recurring.service';
+import { SubtaskService } from '@/services/subtasks.service';
+
+export class TaskService {
+  static async fetchAll(userId: string): Promise<TaskResponse[]> {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select(`
+        *,
+        workspace:workspaces!workspace_id (id, name, type),
+        subtasks (*)
+      `)
+      .eq('user_id', userId)
+      .or('is_recurring.eq.false,original_task_id.not.is.null')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  static async create(userId: string, input: CreateTaskInput): Promise<TaskResponse> {
+    const taskData = {
+      title: input.title,
+      description: input.description || null,
+      user_id: userId,
+      workspace_id: input.workspace_id,
+      due_date: input.is_recurring ? null : (input.due_date || null),
+      due_time: input.due_time || null,
+      priority: input.priority || 'medium',
+      status: input.status || 'backlog',
+      estimate_minutes: input.estimate_minutes || null,
+      tags: input.tags || null,
+      is_recurring: input.is_recurring || false,
+      original_task_id: null,
+    };
+
+    const { data: task, error } = await supabase
+      .from('tasks')
+      .insert(taskData)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (input.subtasks && input.subtasks.length > 0) {
+      await SubtaskService.createMultiple(task.id, input.subtasks);
+    }
+
+    let taskToReturn = task;
+    if (input.is_recurring) {
+      const todayCopy = await RecurringTaskService.createTodayCopy(task.id);
+      if (todayCopy) {
+        taskToReturn = todayCopy;
+      }
+    }
+
+    return await this.getById(taskToReturn.id);
+  }
+
+  static async update(taskId: string, input: UpdateTaskInput): Promise<TaskResponse> {
+    const currentTask = await this.getById(taskId);
+    const isRecurringCopy = currentTask.original_task_id !== null;
+    
+    if (isRecurringCopy && currentTask.original_task_id) {
+      return await this.updateRecurringCopy(taskId, currentTask.original_task_id, input);
+    } else {
+      return await this.updateRegularTask(taskId, input);
+    }
+  }
+
+  private static async updateRecurringCopy(
+    copyId: string, 
+    templateId: string, 
+    input: UpdateTaskInput
+  ): Promise<TaskResponse> {
+    const templateData = {
+      title: input.title,
+      description: input.description,
+      workspace_id: input.workspace_id,
+      due_time: input.due_time,
+      priority: input.priority,
+      estimate_minutes: input.estimate_minutes,
+      tags: input.tags,
+      is_recurring: input.is_recurring,
+      due_date: null
+    };
+
+    const { error: templateError } = await supabase
+      .from('tasks')
+      .update(templateData)
+      .eq('id', templateId);
+
+    if (templateError) throw templateError;
+
+    if (input.subtasks !== undefined) {
+      await SubtaskService.replaceAll(templateId, input.subtasks);
+    }
+
+    const copyData = {
+      title: input.title,
+      description: input.description,
+      workspace_id: input.workspace_id,
+      due_time: input.due_time,
+      priority: input.priority,
+      estimate_minutes: input.estimate_minutes,
+      tags: input.tags,
+      status: input.status
+    };
+
+    const { data: updatedCopy, error: copyError } = await supabase
+      .from('tasks')
+      .update(copyData)
+      .eq('id', copyId)
+      .select(`
+        *,
+        workspace:workspaces!workspace_id (id, name, type),
+        subtasks (*)
+      `)
+      .single();
+
+    if (copyError) throw copyError;
+
+    if (input.subtasks !== undefined) {
+      await SubtaskService.replaceAll(copyId, input.subtasks);
+    }
+
+    return updatedCopy;
+  }
+
+  private static async updateRegularTask(taskId: string, input: UpdateTaskInput): Promise<TaskResponse> {
+    const updateData: Partial<TaskResponse> = {
+      title: input.title,
+      description: input.description,
+      workspace_id: input.workspace_id,
+      due_time: input.due_time,
+      priority: input.priority,
+      estimate_minutes: input.estimate_minutes,
+      tags: input.tags,
+      is_recurring: input.is_recurring,
+      due_date: input.is_recurring ? null : input.due_date,
+      status: input.status
+    };
+
+    const { data: updatedTask, error } = await supabase
+      .from('tasks')
+      .update(updateData)
+      .eq('id', taskId)
+      .select(`
+        *,
+        workspace:workspaces!workspace_id (id, name, type),
+        subtasks (*)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    if (input.subtasks !== undefined) {
+      await SubtaskService.replaceAll(taskId, input.subtasks);
+    }
+
+    if (input.is_recurring) {
+      const today = new Date().toISOString().split('T')[0];
+      await supabase
+        .from('tasks')
+        .delete()
+        .eq('original_task_id', taskId)
+        .gte('due_date', `${today}T00:00:00.000Z`)
+        .lt('due_date', `${today}T23:59:59.999Z`);
+
+      await RecurringTaskService.createTodayCopy(taskId);
+    }
+
+    return updatedTask;
+  }
+
+  static async delete(taskId: string): Promise<void> {
+    const { data: task } = await supabase
+      .from('tasks')
+      .select('original_task_id, is_recurring')
+      .eq('id', taskId)
+      .single();
+
+    if (!task) throw new Error('Task not found');
+
+    const isRecurringTemplate = task.is_recurring && !task.original_task_id;
+
+    if (isRecurringTemplate) {
+      await supabase.from('tasks').delete().eq('original_task_id', taskId);
+    }
+
+    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+    if (error) throw error;
+  }
+
+  static async updateSubtask(subtaskId: string, updates: { completed?: boolean }): Promise<void> {
+    const { error } = await supabase
+      .from('subtasks')
+      .update(updates)
+      .eq('id', subtaskId);
+
+    if (error) throw error;
+  }
+
+  static async getById(taskId: string): Promise<TaskResponse> {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select(`
+        *,
+        workspace:workspaces!workspace_id (id, name, type),
+        subtasks (*)
+      `)
+      .eq('id', taskId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+}
