@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
-import type { TaskResponse, CreateTaskInput, UpdateTaskInput } from '@/interface/task.interface';
+import type { TaskResponse, CreateTaskInput, UpdateTaskInput, TaskStatus } from '@/interface/task.interface';
 import { TaskService } from '@/services/tasks.service';
 import { RecurringTaskService } from '@/services/recurring.service';
 
@@ -131,6 +131,49 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
+  async function toggleTaskCompletion(
+    taskId: string, 
+    currentStatus: TaskStatus
+  ): Promise<{ xpEarned: number; leveledUp: boolean; newLevel: number }> {
+    try {
+      const result = await TaskService.toggleTaskCompletion(taskId, currentStatus);
+      await fetchTasks();
+  
+      return result;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      error.value = message;
+      console.error('[TasksStore] Toggle completion error:', err);
+      return { xpEarned: 0, leveledUp: false, newLevel: 0 };
+    }
+  }
+
+  async function archiveTask(taskId: string): Promise<boolean> {
+    try {
+      await TaskService.archiveTask(taskId);
+      await fetchTasks();
+      return true;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      error.value = message;
+      console.error('[TasksStore] Archive error:', err);
+      return false;
+    }
+  }
+
+  async function unarchiveTask(taskId: string): Promise<boolean> {
+    try {
+      await TaskService.unarchiveTask(taskId);
+      await fetchTasks();
+      return true;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      error.value = message;
+      console.error('[TasksStore] Unarchive error:', err);
+      return false;
+    }
+  }
+
   return {
     tasks,
     loading,
@@ -138,11 +181,15 @@ export const useTasksStore = defineStore('tasks', () => {
     todayTasks,
     todoTasks,
     completedTasks,
+
     createTask,
     fetchTasks,
     checkRecurringTasks,
     updateSubtask,
     updateTask,
-    deleteTask
+    deleteTask,
+    toggleTaskCompletion,
+    archiveTask,
+    unarchiveTask
   };
 });

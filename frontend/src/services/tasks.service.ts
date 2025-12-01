@@ -1,7 +1,10 @@
 import { supabase } from '@/utils/supabase';
-import type { TaskResponse, CreateTaskInput, UpdateTaskInput } from '@/interface/task.interface';
+import type { TaskResponse, CreateTaskInput, UpdateTaskInput, TaskStatus } from '@/interface/task.interface';
 import { RecurringTaskService } from '@/services/recurring.service';
 import { SubtaskService } from '@/services/subtasks.service';
+import { TaskStatusUtils } from '@/utils/taskStatus';
+import { useAuthStore } from '@/stores/authStore';
+import { ProgressService } from '@/services/progress.service';
 
 export class TaskService {
   static async fetchAll(userId: string): Promise<TaskResponse[]> {
@@ -216,5 +219,121 @@ export class TaskService {
 
     if (error) throw error;
     return data;
+  }
+
+  static async toggleTaskCompletion(
+    taskId: string, 
+    currentStatus: TaskStatus
+  ): Promise<{ xpEarned: number; leveledUp: boolean; newLevel: number }> {
+    const userId = useAuthStore().userId;
+    if (!userId) throw new Error('User not authenticated');
+
+    const task = await this.getById(taskId);
+  
+    console.log('[TaskService] Toggle completion:', {
+      taskId,
+      currentStatus,
+      taskTitle: task.title
+    });
+
+    const newStatus = TaskStatusUtils.onCheckboxToggle(
+      currentStatus, 
+      !TaskStatusUtils.isCompleted(currentStatus),
+      task.previous_status
+    );
+
+    console.log('[TaskService] New status:', newStatus);
+
+    if (newStatus === currentStatus) {
+      return { xpEarned: 0, leveledUp: false, newLevel: 0 };
+    }
+
+    const updateData: Partial<TaskResponse> = {
+      status: newStatus,
+      previous_status: currentStatus
+    };
+
+    if (newStatus === 'done') {
+      updateData.completed_at = new Date().toISOString();
+
+      if (task.subtasks && task.subtasks.length > 0) {
+        await supabase
+          .from('subtasks')
+          .update({ completed: true })
+          .eq('task_id', taskId);
+      }
+
+      const { error } = await supabase
+        .from('tasks')
+        .update(updateData)
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      const progressResult = await ProgressService.completeTask(task, userId);
+
+      return progressResult;
+    }
+
+    console.log('[TaskService] Uncompleting task, removing from completed_tasks');
+    updateData.completed_at = null;
+
+    if (task.subtasks && task.subtasks.length > 0) {
+      await supabase
+        .from('subtasks')
+        .update({ completed: false })
+        .eq('task_id', taskId);
+    }
+
+    const { error } = await supabase
+      .from('tasks')
+      .update(updateData)
+      .eq('id', taskId);
+
+    if (error) throw error;
+
+    const xpRemoved = await ProgressService.uncompleteTask(task, userId);
+    console.log('[TaskService] Task uncompleted successfully');
+
+    return { xpEarned: -xpRemoved, leveledUp: false, newLevel: 0 };
+  }
+
+  static async archiveTask(taskId: string): Promise<void> {
+    const { data: task } = await supabase
+      .from('tasks')
+      .select('status')
+      .eq('id', taskId)
+      .single();
+
+    if (!task) throw new Error('Task not found');
+
+    const { error } = await supabase
+      .from('tasks')
+      .update({
+        status: 'archived' as TaskStatus,
+        previous_status: task.status
+      })
+      .eq('id', taskId);
+
+    if (error) throw error;
+  }
+
+  static async unarchiveTask(taskId: string): Promise<void> {
+    const { data: task } = await supabase
+      .from('tasks')
+      .select('previous_status, due_date')
+      .eq('id', taskId)
+      .single();
+
+    if (!task) throw new Error('Task not found');
+
+    const newStatus = task.previous_status || (task.due_date ? 'planned' : 'backlog');
+
+    const { error } = await supabase
+      .from('tasks')
+      .update({ status: newStatus })
+      .eq('id', taskId);
+
+    if (error) throw error;
   }
 }
