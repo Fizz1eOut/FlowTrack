@@ -1,5 +1,5 @@
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
-export type TaskStatus = 'backlog' | 'in_progress' | 'done';
+export type TaskStatus = 'backlog' | 'in_progress' | 'done' | 'planned' | 'archived';
 
 export interface Subtask {
   id: string;
@@ -35,6 +35,7 @@ export interface TaskResponse {
   subtasks?: Subtask[];
   is_recurring: boolean;
   original_task_id: string | null;
+  previous_status?: TaskStatus;
 }
 
 export interface CreateTaskInput {
