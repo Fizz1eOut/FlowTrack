@@ -20,10 +20,6 @@
 </template>
 
 <style scoped>
-  .container {
-    max-width: 1800px;
-    margin: 0 auto;
-  }
   .size-xl {
     padding: 32px;
   }

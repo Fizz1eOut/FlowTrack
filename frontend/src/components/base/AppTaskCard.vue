@@ -1,5 +1,7 @@
 <script setup lang="ts">
+  import { computed } from 'vue';
   import type { TaskResponse } from '@/interface/task.interface';
+  import { TaskStatusUtils } from '@/utils/taskStatus';
   import AppContainer from '@/components/base/AppContainer.vue';
   import TaskCardHeader from '@/components/content/tasks/card/TaskCardHeader.vue';
   import TaskCardMeta from '@/components/content/tasks/card/TaskCardMeta.vue';
@@ -9,13 +11,15 @@
   interface TaskCardProps {
     task: TaskResponse;
   }
-  defineProps<TaskCardProps>();
+  const props = defineProps<TaskCardProps>();
+
+  const isCompleted = computed(() => TaskStatusUtils.isCompleted(props.task.status));
 </script>
 
 <template>
   <div class="task-card">
     <app-container size="md">
-      <div class="task-card__body">
+      <div class="task-card__body" :class="{'completed': isCompleted}">
         <task-card-header :task="task" />
         <task-card-meta :task="task" />
         <task-card-tags :task="task" />
@@ -32,5 +36,8 @@
   }
   .task-card__body > *:not(:last-child) {
     margin-bottom: var(--radius-sm);
+  }
+  .completed {
+    opacity: 0.4;
   }
 </style>

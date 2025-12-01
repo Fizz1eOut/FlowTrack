@@ -1,6 +1,9 @@
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { ref, computed } from 'vue';
   import type { TaskResponse } from '@/interface/task.interface';
+  import { useTasksStore } from '@/stores/taskStore';
+  import { TaskStatusUtils } from '@/utils/taskStatus';
+  import { showToast } from '@/stores/toastStore';
   import AppCheckbox from '@/components/inputs/AppCheckbox.vue';
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
@@ -9,17 +12,56 @@
   interface TaskCardHeaderProps {
     task: TaskResponse;
   }
-  defineProps<TaskCardHeaderProps>();
+  const props = defineProps<TaskCardHeaderProps>();
 
+  const emit = defineEmits<{
+    completedChange: [boolean];
+  }>();
+
+  const taskStore = useTasksStore();
   const isOpen = ref(false);
+
+  const isCompleted = computed(() => TaskStatusUtils.isCompleted(props.task.status));
+  const canCheck = computed(() => TaskStatusUtils.canCheck(props.task.status));
+
+  async function handleCheckboxToggle() {
+    if (!canCheck.value) return;
+
+    const wasCompleted = isCompleted.value;
+  
+    const result = await taskStore.toggleTaskCompletion(props.task.id, props.task.status);
+
+    emit('completedChange', isCompleted.value);
+
+    if (!wasCompleted && result.xpEarned > 0) {
+      if (result.leveledUp) {
+        showToast(
+          `Level Up! You reached level ${result.newLevel} and earned ${result.xpEarned} XP!`,
+          'success'
+        );
+      } else {
+        showToast(`Task completed! +${result.xpEarned} XP`, 'success');
+      }
+    } else if (wasCompleted && result.xpEarned < 0) {
+      const xpLost = Math.abs(result.xpEarned);
+      showToast(`Task marked as incomplete. ${xpLost} XP removed`, 'success');
+    }
+    else if (wasCompleted && result.xpEarned === 0) {
+      showToast('Task marked as incomplete', 'success');
+    }
+  }
 </script>
 
 <template>
   <div class="task-card-header">
     <div class="task-card-header__field">
-      <div class="task-card-header__row">
-        <app-checkbox />
-        <div class="task-card-header__title">{{ task.title }}</div>
+      <div class="task-card-header__row"> 
+        <app-checkbox 
+          :model-value="isCompleted"
+          :disabled="!canCheck"
+          @update:model-value="handleCheckboxToggle"
+        />
+        <div class="task-card-header__title" :class="{ 'completed': isCompleted }">{{ task.title }}</div>
       </div>
 
       <div class="task-card-header__options">
@@ -51,6 +93,10 @@
     align-items: center;
     gap: 10px;
   }
+  .completed {
+    opacity: 0.6;
+    text-decoration: line-through;
+  }
   .task-card-header__title {
     font-size: var(--fs-xl);
     color: var(--color-black);
@@ -70,4 +116,6 @@
     right: 0;
     left: unset;
   }
+
+  
 </style>
