@@ -36,3 +36,12 @@ export interface XPCalculation {
   subtaskBonus: number;
   totalXP: number;
 }
+
+export interface DailyCompletion {
+  id: string;
+  user_id: string;
+  date: string;
+  tasks_completed: number;
+  xp_earned: number;
+  created_at: string;
+}

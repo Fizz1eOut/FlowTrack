@@ -1,5 +1,5 @@
 import { supabase } from '@/utils/supabase';
-import type { UserProgress, LevelRequirement, CompletedTask } from '@/interface/progress.interface';
+import type { UserProgress, LevelRequirement, CompletedTask, DailyCompletion } from '@/interface/progress.interface';
 import type { TaskResponse } from '@/interface/task.interface';
 import { XPCalculator } from '@/utils/xpCalculator';
 
@@ -33,6 +33,117 @@ export class ProgressService {
 
     if (error) throw error;
     return data || [];
+  }
+
+  static async getDailyCompletions(userId: string, limit: number = 100): Promise<DailyCompletion[]> {
+    const { data, error } = await supabase
+      .from('daily_completions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  static async updateDailyCompletion(userId: string, xpEarned: number): Promise<void> {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: existing } = await supabase
+      .from('daily_completions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('date', today)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase
+        .from('daily_completions')
+        .update({
+          tasks_completed: existing.tasks_completed + 1,
+          xp_earned: existing.xp_earned + xpEarned
+        })
+        .eq('id', existing.id);
+
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('daily_completions')
+        .insert({
+          user_id: userId,
+          date: today,
+          tasks_completed: 1,
+          xp_earned: xpEarned
+        });
+
+      if (error) throw error;
+    }
+  }
+
+  static async removeDailyCompletion(userId: string, xpToRemove: number): Promise<void> {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: existing } = await supabase
+      .from('daily_completions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('date', today)
+      .maybeSingle();
+
+    if (!existing) return;
+
+    const newTasksCompleted = Math.max(0, existing.tasks_completed - 1);
+    const newXpEarned = Math.max(0, existing.xp_earned - xpToRemove);
+
+    if (newTasksCompleted === 0) {
+      const { error } = await supabase
+        .from('daily_completions')
+        .delete()
+        .eq('id', existing.id);
+
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('daily_completions')
+        .update({
+          tasks_completed: newTasksCompleted,
+          xp_earned: newXpEarned
+        })
+        .eq('id', existing.id);
+
+      if (error) throw error;
+    }
+  }
+
+  static calculateStreak(completions: DailyCompletion[]): number {
+    if (completions.length === 0) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let streak = 0;
+
+    for (let i = 0; i < completions.length; i++) {
+      const completion = completions[i];
+    
+      if (!completion) break;
+    
+      const completionDate = new Date(completion.date);
+      completionDate.setHours(0, 0, 0, 0);
+
+      const expectedDate = new Date(today);
+      expectedDate.setDate(today.getDate() - i);
+      expectedDate.setHours(0, 0, 0, 0);
+
+      if (completionDate.getTime() === expectedDate.getTime()) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    return streak;
   }
 
   static async completeTask(task: TaskResponse, userId: string): Promise<{
@@ -79,6 +190,8 @@ export class ProgressService {
       .eq('user_id', userId);
 
     if (progressError) throw progressError;
+
+    await this.updateDailyCompletion(userId, xpEarned);
 
     return {
       xpEarned,
@@ -137,6 +250,8 @@ export class ProgressService {
       .eq('user_id', userId);
 
     if (progressError) throw progressError;
+
+    await this.removeDailyCompletion(userId, xpToRemove);
 
     return xpToRemove;
   }
