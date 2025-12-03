@@ -38,7 +38,7 @@
     align-items: flex-start;
   }
   .sidebar--open {
-    max-width: 300px;
+    max-width: 240px;
     width: 100%;
   }
   .dashboard-layout__content {

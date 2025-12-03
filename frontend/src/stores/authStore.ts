@@ -6,6 +6,7 @@ import type {
   LoginCredentials, 
   RegisterCredentials, 
   CustomAuthResponse,
+  UserProfile
 } from '@/interface/auth.interface';
 
 export const useAuthStore = defineStore('auth', () => {
@@ -20,9 +21,27 @@ export const useAuthStore = defineStore('auth', () => {
   const userEmail = computed<string | undefined>(() => user.value?.email);
   const accessToken = computed<string | undefined>(() => session.value?.access_token);
   const userFullName = computed<string | undefined>(() => user.value?.user_metadata?.full_name);
+  const userProfile = ref<UserProfile | null>(null);
 
   const clearError = (): void => {
     error.value = null;
+  };
+
+  const loadUserProfile = async () => {
+    if (!user.value) return;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.value.id)
+      .single();
+
+    if (error) {
+      console.error('[AuthStore] profile error:', error);
+      return;
+    }
+
+    userProfile.value = data as UserProfile;
   };
 
   const signUp = async (credentials: RegisterCredentials): Promise<CustomAuthResponse> => {
@@ -45,6 +64,8 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = data.user;
       session.value = data.session;
       
+      await loadUserProfile();
+
       needsOnboarding.value = true;
 
       return { 
@@ -78,6 +99,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = data.user;
       session.value = data.session;
 
+      await loadUserProfile();
       await checkOnboardingStatus();
 
       return { 
@@ -195,6 +217,7 @@ export const useAuthStore = defineStore('auth', () => {
       session.value = data.session;
 
       if (user.value) {
+        await loadUserProfile();
         await checkOnboardingStatus();
       }
 
@@ -300,15 +323,12 @@ export const useAuthStore = defineStore('auth', () => {
   const initialize = async (): Promise<void> => {
     await getCurrentUser();
 
-    // ИСПРАВЛЕНИЕ: делаем обработчик неблокирующим
     supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, currentSession: Session | null) => {
       console.log('[Auth] State changed:', event);
 
-      // Обновляем состояние немедленно, без await
       user.value = currentSession?.user || null;
       session.value = currentSession;
 
-      // Запускаем checkOnboardingStatus асинхронно, не блокируя обработчик
       if (event === 'SIGNED_IN' && currentSession?.user) {
         checkOnboardingStatus().catch(err => {
           console.error('[Auth] checkOnboardingStatus failed:', err);
@@ -338,6 +358,7 @@ export const useAuthStore = defineStore('auth', () => {
     loading: readonly(loading),
     error: readonly(error),
     needsOnboarding: readonly(needsOnboarding),
+    userProfile: readonly(userProfile),
 
     isAuthenticated,
     userId,
@@ -348,6 +369,7 @@ export const useAuthStore = defineStore('auth', () => {
     userCreatedAtFormatted,
 
     clearError,
+    loadUserProfile,
     signUp,
     signIn,
     signInWithOAuth,
