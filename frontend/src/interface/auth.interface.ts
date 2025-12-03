@@ -44,3 +44,13 @@ export interface OnboardingData {
   workHoursEnd?: string;
   timezone: string;
 }
+
+export interface UserProfile {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  timezone: string | null;
+  work_hours_start: string | null;
+  work_hours_end: string | null;
+  xp: number;
+}
