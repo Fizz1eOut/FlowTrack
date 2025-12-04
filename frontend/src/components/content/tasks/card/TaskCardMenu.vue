@@ -1,8 +1,9 @@
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { ref, computed } from 'vue';
   import type { TaskResponse } from '@/interface/task.interface';
   import { useTasksStore } from '@/stores/taskStore';
   import { showToast } from '@/stores/toastStore';
+  import { TaskStatusUtils } from '@/utils/taskStatus';
   import AppButton from '@/components/base/AppButton.vue';
   import AppDropdown from '@/components/base/AppDropdown.vue';
   import TaskEditForm from '@/components/content/tasks/form/TaskEditForm.vue';
@@ -15,6 +16,10 @@
   const props = defineProps<TaskCardMenuProps>();
 
   const isEditModalOpen = ref(false);
+  const taskStore = useTasksStore();
+
+  const canArchive = computed(() => TaskStatusUtils.canArchive(props.task.status));
+  const canUnarchive = computed(() => TaskStatusUtils.canUnarchive(props.task.status));
 
   function openEditModal() {
     isEditModalOpen.value = true;
@@ -23,8 +28,6 @@
   function closeEditModal() {
     isEditModalOpen.value = false;
   }
-
-  const taskStore = useTasksStore();
 
   const handleDelete = async () => {
     const success = await taskStore.deleteTask(props.task.id);
@@ -35,6 +38,26 @@
     } else {
       showToast('Failed to delete the task.', 'error');
       console.error('Failed to delete the task');
+    }
+  };
+
+  const handleArchive = async () => {
+    const success = await taskStore.archiveTask(props.task.id);
+  
+    if (success) {
+      showToast('Task archived successfully.', 'success');
+    } else {
+      showToast('Failed to archive the task.', 'error');
+    }
+  };
+
+  const handleUnarchive = async () => {
+    const success = await taskStore.unarchiveTask(props.task.id);
+  
+    if (success) {
+      showToast('Task restored successfully.', 'success');
+    } else {
+      showToast('Failed to restore the task.', 'error');
     }
   };
 </script>
@@ -52,9 +75,18 @@
             @update:model-value="isEditModalOpen = $event" 
             :scrollable="true"
           >
-            <task-edit-form :task="task" @close="closeEditModal"  />
+            <task-edit-form :task="task" @close="closeEditModal" />
           </app-modal>
         </li>
+
+        <li v-if="canArchive" class="task-card-menu__item">
+          <app-button @click="handleArchive" class="task-card-menu__btn">Archive</app-button>
+        </li>
+
+        <li v-if="canUnarchive" class="task-card-menu__item">
+          <app-button @click="handleUnarchive" class="task-card-menu__btn">Restore</app-button>
+        </li>
+
         <li class="task-card-menu__item">
           <app-button @click="handleDelete" class="task-card-menu__btn task-card-menu__btn--delete">
             Delete

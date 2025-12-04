@@ -16,6 +16,8 @@ export const useTasksStore = defineStore('tasks', () => {
     today.setHours(0, 0, 0, 0);
 
     return tasks.value.filter(task => {
+      if (task.status === 'archived') return false;
+
       if (!task.due_date) return false;
       const taskDate = new Date(task.due_date);
       taskDate.setHours(0, 0, 0, 0);
@@ -23,12 +25,16 @@ export const useTasksStore = defineStore('tasks', () => {
     });
   });
 
-  const todoTasks = computed(() => {
-    return tasks.value.filter(task => task.status === 'backlog');
-  });
-
   const completedTasks = computed(() => {
     return tasks.value.filter(task => task.status === 'done');
+  });
+
+  const activeTasks = computed(() => {
+    return tasks.value.filter(task => task.status !== 'archived');
+  });
+
+  const archivedTasks = computed(() => {
+    return tasks.value.filter(task => task.status === 'archived');
   });
 
   async function fetchTasks(): Promise<TaskResponse[]> {
@@ -179,7 +185,8 @@ export const useTasksStore = defineStore('tasks', () => {
     loading,
     error,
     todayTasks,
-    todoTasks,
+    activeTasks,
+    archivedTasks,
     completedTasks,
 
     createTask,
