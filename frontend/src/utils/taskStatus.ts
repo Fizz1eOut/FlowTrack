@@ -2,13 +2,15 @@ import type { TaskStatus } from '@/interface/task.interface';
 
 export class TaskStatusUtils {
   static readonly STATUSES: TaskStatus[] = ['backlog', 'planned', 'in_progress', 'done', 'archived'];
+  
+  static readonly SELECTABLE_STATUSES: TaskStatus[] = ['backlog', 'planned', 'in_progress', 'done'];
 
   private static readonly ALLOWED_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
-    backlog: ['planned', 'done', 'archived'],
-    planned: ['in_progress', 'done', 'backlog', 'archived'],
-    in_progress: ['done', 'planned', 'archived'],
-    done: ['archived', 'planned', 'backlog', 'in_progress'],
-    archived: ['backlog', 'planned']
+    backlog: ['planned', 'in_progress', 'done'],
+    planned: ['in_progress', 'done', 'backlog'],
+    in_progress: ['done', 'planned'],
+    done: ['planned', 'backlog', 'in_progress'],
+    archived: ['backlog', 'planned', 'in_progress']
   };
 
   static canTransition(from: TaskStatus, to: TaskStatus): boolean {
@@ -17,7 +19,18 @@ export class TaskStatusUtils {
   }
 
   static getAvailableStatuses(currentStatus: TaskStatus): TaskStatus[] {
+    if (currentStatus === 'archived') {
+      return ['backlog', 'planned', 'in_progress'];
+    }
     return this.ALLOWED_TRANSITIONS[currentStatus] || [];
+  }
+
+  static canArchive(currentStatus: TaskStatus): boolean {
+    return currentStatus !== 'archived';
+  }
+
+  static canUnarchive(currentStatus: TaskStatus): boolean {
+    return currentStatus === 'archived';
   }
 
   static onDeadlineSet(currentStatus: TaskStatus): TaskStatus {
@@ -39,8 +52,12 @@ export class TaskStatusUtils {
     checked: boolean,
     previousStatus?: TaskStatus
   ): TaskStatus {
+    if (currentStatus === 'archived') {
+      return currentStatus;
+    }
+
     if (checked) {
-      if (currentStatus !== 'done' && currentStatus !== 'archived') {
+      if (currentStatus !== 'done') {
         return 'done';
       }
     } else {
@@ -55,7 +72,7 @@ export class TaskStatusUtils {
   }
 
   static getPreviousStatus(task: { due_date: string | null; previous_status?: TaskStatus }): TaskStatus {
-    if (task.previous_status && task.previous_status !== 'done') {
+    if (task.previous_status && task.previous_status !== 'done' && task.previous_status !== 'archived') {
       return task.previous_status;
     }
     return task.due_date ? 'planned' : 'backlog';
