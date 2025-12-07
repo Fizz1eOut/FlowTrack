@@ -1,27 +1,29 @@
 <script setup lang="ts">
-  import { onMounted } from 'vue';
-  import { useProgressStore } from '@/stores/progressStore';
-  import AppLoadingSpinner from '@/components/base/AppLoadingSpinner.vue';
   import AppProgressBar from '@/components/base/AppProgressBar.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
   import AppContainer from '@/components/base/AppContainer.vue';
 
-  const progressStore = useProgressStore();
+  interface ProgressInfo {
+    currentLevelXP: number;
+    nextLevelXP: number;
+    progressXP: number;
+    progressPercentage: number;
+  }
 
-  onMounted(() => {
-    progressStore.fetchProgress();
-  });
-
-  defineExpose({
-    refresh: () => progressStore.refreshProgress()
-  });
+  interface ProgressCardProps {
+    currentLevel: number;
+    tasksCompleted: number;
+    currentStreak: number;
+    tasksToday: number;
+    nextLevelXp: number;
+    progressInfo: ProgressInfo;
+  }
+  defineProps<ProgressCardProps>();
 </script>
 
 <template>
   <div class="progress-card">
-    <app-loading-spinner v-if="progressStore.loading"  text="Loading..." />
-
-    <div v-else-if="progressStore.userProgress" class="progress-card__content">
+    <div  class="progress-card__content">
       <app-container size="sm">
         <div class="progress-card__header">
           <div class="progress-card__level">
@@ -32,32 +34,24 @@
             />
             <div class="progress-card__title">
               Your Level
-              <span class="progress-card__number">{{ progressStore.currentLevel }}</span>
+              <span class="progress-card__number">{{ currentLevel }}</span>
             </div>
-          </div>
-          <div class="progress-card__stats">
-            <span class="progress-card__stat">
-              Tasks Completed: {{ progressStore.tasksCompleted }}
-            </span>
-
-            <div>Days in a row: {{ progressStore.currentStreak }}</div>
-            <div>Completed today: {{ progressStore.tasksCompletedToday }}</div>
           </div>
         </div>
 
         <div class="progress-card__progress">
           <div class="progress-card__progress-bar">
             <app-progress-bar
-              :percentage="progressStore.progressInfo.progressPercentage"
+              :percentage="progressInfo.progressPercentage"
             />
           </div>
 
           <div class="progress-card__info">
             <span class="progress-card__xp--current">
-              XP: {{ progressStore.progressInfo.progressXP }} / {{ progressStore.nextLevelXPRequired }}
+              XP: {{ progressInfo.progressXP }} / {{ progressInfo.nextLevelXP }}
             </span>
             <span class="progress-card__xp--percentage">
-              Progress: {{ progressStore.progressInfo.progressPercentage }}%
+              Progress: {{ progressInfo.progressPercentage }}%
             </span>
           </div>
         </div>
