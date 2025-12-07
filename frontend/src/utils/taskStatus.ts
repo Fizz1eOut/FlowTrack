@@ -100,4 +100,30 @@ export class TaskStatusUtils {
     };
     return labels[status];
   }
+
+  static getStatusColor(status: TaskStatus): string {
+    const colors: Record<TaskStatus, string> = {
+      backlog: '#6B7280',
+      planned: '#3B82F6',
+      in_progress: '#F59E0B',
+      done: '#10B981',
+      archived: '#9CA3AF'
+    };
+    return colors[status];
+  }
+
+  static getStatusBackground(status: TaskStatus): string {
+    const backgrounds: Record<TaskStatus, string> = {
+      backlog: '#F3F4F6',
+      planned: '#DBEAFE',
+      in_progress: '#FEF3C7',
+      done: '#D1FAE5',
+      archived: '#F9FAFB'
+    };
+    return backgrounds[status];
+  }
+
+  static getStatusClass(status: TaskStatus): string {
+    return `status-badge--${status}`;
+  }
 }

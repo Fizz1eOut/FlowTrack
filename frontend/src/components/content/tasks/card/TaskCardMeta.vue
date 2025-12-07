@@ -2,6 +2,7 @@
   import { computed } from 'vue';
   import type { TaskResponse } from '@/interface/task.interface';  
   import AppIcon from '@/components/base/AppIcon.vue';
+  import TaskCardStatus from '@/components/content/tasks/card/TaskCardStatus.vue';
 
   interface TaskCardMetaProps {
     task: TaskResponse;
@@ -57,7 +58,7 @@
         {{ task.workspace.name }}
       </div>
 
-      <div class="task-card-meta_date-time">
+      <div class="task-card-meta__date-time">
         <app-icon 
           name="time"
           size="var(--fs-md)"
@@ -65,6 +66,8 @@
         />
         {{ formatted }}
       </div>
+
+      <task-card-status :status="task.status" />
     </div>
   </div>
 </template>
@@ -82,8 +85,14 @@
     align-items: center;
     gap: 6px;
   }
-  .task-card-meta_date-time {
+  .task-card-meta__date-time {
     display: flex;
     gap: 4px;
+  }
+  .task-card-meta__status {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--gradient-subtle);
   }
 </style>
