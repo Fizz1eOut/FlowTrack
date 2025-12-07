@@ -64,7 +64,7 @@
         <div class="task-card-header__title" :class="{ 'completed': isCompleted }">{{ task.title }}</div>
       </div>
 
-      <div class="task-card-header__options">
+      <div v-if="!isCompleted" class="task-card-header__options">
         <app-button @click="isOpen = !isOpen">
           <app-icon 
             name="three-dots"

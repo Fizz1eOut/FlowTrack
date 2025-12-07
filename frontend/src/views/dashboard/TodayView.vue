@@ -4,7 +4,7 @@
   import { useAuthStore } from '@/stores/authStore';
   import AppLoadingSpinner from '@/components/base/AppLoadingSpinner.vue';
   import AppTaskCard from '@/components/base/AppTaskCard.vue';
-  import ProgressCard from '@/components/content/progress/ProgressCard.vue';
+  import ProgressSection from '@/components/content/progress/ProgressSection.vue';
   import AppTitle from '@/components/base/AppTitle.vue';
 
   const taskStore = useTasksStore();
@@ -34,31 +34,39 @@
 
   <div v-else>
     <div class="today">
-      <div class="today__header">
-        <app-title>
-          Today’s Schedule
-        </app-title>
-        <p class="today__date">{{ formattedDate }}</p>
-      </div>
-      <div class="today__body">
-        <div class="today__items">
-          <div 
-            v-for="task in taskStore.todayTasks" 
-            :key="task.id"
-            class="today__item"
-          >
-            <app-task-card :task="task" />
+      <div class="today__group">
+        <div class="today__header">
+          <app-title>
+            Today’s Schedule
+          </app-title>
+          <p class="today__date">{{ formattedDate }}</p>
+        </div>
+        <div class="today__body">
+          <div class="today__items">
+            <div 
+              v-for="task in taskStore.todayTasks" 
+              :key="task.id"
+              class="today__item"
+            >
+              <app-task-card :task="task" />
+            </div>
           </div>
         </div>
-        <div class="today__progress">
-          <progress-card class="progress-card" />
-        </div>
+      </div>
+      <div class="today__progress">
+        <progress-section class="progress-section" />
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+  .today {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
   .today__empty {
     margin-top: var(--space-2xl);
     text-align: center;
@@ -78,11 +86,24 @@
   .today__item:not(:last-child) {
     margin-bottom: var(--space-sm);
   }
+  .today__group,
   .today__items {
-    flex: 1;
+    width: 100%;
   }
   .today__progress {
-    position: relative;
-    flex: 0 0 300px;
+    max-width: 300px;
+    width: 100%;
+  }
+  @media (max-width: 990px) {
+    .today {
+      flex-wrap: wrap;
+      row-gap: 40px;
+    }
+    .today__group {
+      order: 1;
+    }
+     .today__progress {
+      max-width: 100%;
+     }
   }
 </style>
