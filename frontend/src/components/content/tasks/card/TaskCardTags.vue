@@ -63,4 +63,11 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
   }
+  @media (max-width: 500px) {
+    .task-card-tags__group,
+    .task-card-tags__tags {
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+  }
 </style>
