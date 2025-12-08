@@ -123,20 +123,32 @@ export class ProgressService {
     today.setHours(0, 0, 0, 0);
 
     let streak = 0;
+    let checkDate = new Date(today);
 
-    for (let i = 0; i < completions.length; i++) {
-      const completion = completions[i];
-    
-      if (!completion) break;
-    
-      const completionDate = new Date(completion.date);
-      completionDate.setHours(0, 0, 0, 0);
+    // Проверяем сегодня
+    const todayCompletion = completions.find(c => {
+      const d = new Date(c.date);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === today.getTime();
+    });
 
-      const expectedDate = new Date(today);
-      expectedDate.setDate(today.getDate() - i);
-      expectedDate.setHours(0, 0, 0, 0);
+    if (todayCompletion) {
+      streak = 1;
+    }
 
-      if (completionDate.getTime() === expectedDate.getTime()) {
+    // Проверяем предыдущие дни
+    for (let i = 1; i <= completions.length; i++) {
+      checkDate = new Date(today);
+      checkDate.setDate(today.getDate() - i);
+      checkDate.setHours(0, 0, 0, 0);
+
+      const dayCompletion = completions.find(c => {
+        const d = new Date(c.date);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime() === checkDate.getTime();
+      });
+
+      if (dayCompletion) {
         streak++;
       } else {
         break;
@@ -201,31 +213,31 @@ export class ProgressService {
   }
 
   static async uncompleteTask(task: TaskResponse, userId: string): Promise<number> {
-    const { data: completedTask, error: fetchError } = await supabase
+    const { data: completedTasks, error: fetchError } = await supabase
       .from('completed_tasks')
       .select('*')
       .eq('task_id', task.id)
       .eq('user_id', userId)
-      .maybeSingle();
+      .order('completed_at', { ascending: false })
+      .limit(1);
 
     if (fetchError) {
       console.error('[ProgressService] Fetch completed task error:', fetchError);
       throw fetchError;
     }
 
-    if (!completedTask) {
+    if (!completedTasks || completedTasks.length === 0) {
       console.warn('[ProgressService] Completed task not found:', task.id);
       return 0;
     }
 
+    const completedTask = completedTasks[0];
     const xpToRemove = completedTask.xp_earned;
 
     const { error: deleteError } = await supabase
       .from('completed_tasks')
       .delete()
-      .eq('task_id', task.id)
-      .eq('user_id', userId)
-      .select();
+      .eq('id', completedTask.id);
 
     if (deleteError) {
       console.error('[ProgressService] Delete completed task error:', deleteError);
