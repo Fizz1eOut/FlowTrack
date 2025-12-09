@@ -2,7 +2,7 @@
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
   import AppSearch from '@/components/base/AppSearch.vue';
-  import AppTimeTracker from '@/components/base/AppTimeTracker.vue';
+  import TimerBadge from '@/components/content/timer/TimerBadge.vue';
   import AppNotificationBell from '@/components/base/AppNotificationBell.vue';
   import AppProfile from '@/components/base/AppProfile.vue';
   import TaskCreateModal from '@/components/content/tasks/TaskCreateModal.vue';
@@ -19,7 +19,7 @@
             <app-icon 
               name="sidebar"
               size="var(--fs-xl)"
-              color="var(--color-dark)"
+              color="var(--color-black)"
             />
           </app-button>
         </div>
@@ -31,7 +31,7 @@
       <div class="header__right">
         <div class="header__controls">
           <div class="header__item">
-            <app-time-tracker />
+            <timer-badge />
           </div>
           <div class="header__item">
             <app-notification-bell />
