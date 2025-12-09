@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/authStore';
 import type { TaskResponse, CreateTaskInput, UpdateTaskInput, TaskStatus } from '@/interface/task.interface';
 import { TaskService } from '@/services/tasks.service';
 import { RecurringTaskService } from '@/services/recurring.service';
+import { useProgressStore } from '@/stores/progressStore';
 
 export const useTasksStore = defineStore('tasks', () => {
   const authStore = useAuthStore();
@@ -144,6 +145,9 @@ export const useTasksStore = defineStore('tasks', () => {
     try {
       const result = await TaskService.toggleTaskCompletion(taskId, currentStatus);
       await fetchTasks();
+
+      const progressStore = useProgressStore();
+      await progressStore.fetchProgress();
   
       return result;
     } catch (err: unknown) {
@@ -180,6 +184,20 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
+  async function updateActualMinutes(taskId: string, minutes: number): Promise<void> {
+    try {
+      await TaskService.updateActualMinutes(taskId, minutes);
+    
+      tasks.value = tasks.value.map(task => 
+        task.id === taskId ? { ...task, actual_minutes: minutes } : task
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      error.value = message;
+      console.error('[TasksStore] Update actual minutes error:', err);
+    }
+  }
+
   return {
     tasks,
     loading,
@@ -197,6 +215,7 @@ export const useTasksStore = defineStore('tasks', () => {
     deleteTask,
     toggleTaskCompletion,
     archiveTask,
-    unarchiveTask
+    unarchiveTask,
+    updateActualMinutes
   };
 });

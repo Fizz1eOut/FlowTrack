@@ -36,6 +36,7 @@ export interface TaskResponse {
   is_recurring: boolean;
   original_task_id: string | null;
   previous_status?: TaskStatus;
+  actual_minutes?: number
 }
 
 export interface CreateTaskInput {
@@ -66,6 +67,7 @@ export interface UpdateTaskInput {
   is_recurring: boolean;
   original_task_id?: string | null;
   subtasks: string[];
+  actual_minutes?: number;
 }
 
 export interface CreateSubtaskInput {

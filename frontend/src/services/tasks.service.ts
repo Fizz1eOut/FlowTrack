@@ -336,4 +336,13 @@ export class TaskService {
 
     if (error) throw error;
   }
+
+  static async updateActualMinutes(taskId: string, minutes: number): Promise<void> {
+    const { error } = await supabase
+      .from('tasks')
+      .update({ actual_minutes: minutes })
+      .eq('id', taskId);
+
+    if (error) throw error;
+  }
 }
