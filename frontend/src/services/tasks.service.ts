@@ -188,13 +188,24 @@ export class TaskService {
     if (!task) throw new Error('Task not found');
 
     const isRecurringTemplate = task.is_recurring && !task.original_task_id;
+  
+    const isRecurringCopy = task.original_task_id !== null;
 
     if (isRecurringTemplate) {
       await supabase.from('tasks').delete().eq('original_task_id', taskId);
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+      if (error) throw error;
+    } else if (isRecurringCopy && task.original_task_id) {
+      await supabase.from('tasks').delete().eq('original_task_id', task.original_task_id);
+      const { error: templateError } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', task.original_task_id);
+      if (templateError) throw templateError;
+    } else {
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+      if (error) throw error;
     }
-
-    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-    if (error) throw error;
   }
 
   static async updateSubtask(subtaskId: string, updates: { completed?: boolean }): Promise<void> {
@@ -341,6 +352,26 @@ export class TaskService {
     const { error } = await supabase
       .from('tasks')
       .update({ actual_minutes: minutes })
+      .eq('id', taskId);
+
+    if (error) throw error;
+  }
+
+  static async updateStatus(taskId: string, status: TaskStatus): Promise<void> {
+    const { data: currentTask, error: fetchError } = await supabase
+      .from('tasks')
+      .select('status')
+      .eq('id', taskId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const { error } = await supabase
+      .from('tasks')
+      .update({ 
+        status,
+        previous_status: currentTask?.status 
+      })
       .eq('id', taskId);
 
     if (error) throw error;
