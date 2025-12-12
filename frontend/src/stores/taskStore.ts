@@ -198,6 +198,30 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
+  function getTaskById(taskId: string): TaskResponse | undefined {
+    return tasks.value.find(t => t.id === taskId);
+  }
+
+  async function updateTaskStatus(taskId: string, status: TaskStatus): Promise<void> {
+    try {
+      tasks.value = tasks.value.map(task => 
+        task.id === taskId ? { ...task, status } : task
+      );
+
+      await TaskService.updateStatus(taskId, status);
+    
+      console.log(`[TasksStore] Task ${taskId} status updated to ${status}`);
+    } catch (err) {
+      console.error('[TasksStore] updateTaskStatus error', err);
+    
+      await fetchTasks();
+    
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      error.value = message;
+      throw err;
+    }
+  }
+
   return {
     tasks,
     loading,
@@ -216,6 +240,8 @@ export const useTasksStore = defineStore('tasks', () => {
     toggleTaskCompletion,
     archiveTask,
     unarchiveTask,
-    updateActualMinutes
+    updateActualMinutes,
+    getTaskById,
+    updateTaskStatus
   };
 });
