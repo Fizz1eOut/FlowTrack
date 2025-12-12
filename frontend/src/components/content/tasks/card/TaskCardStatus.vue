@@ -1,19 +1,26 @@
 <script setup lang="ts">
-  import type { TaskStatus } from '@/interface/task.interface';
+  import { computed } from 'vue';
   import { TaskStatusUtils } from '@/utils/taskStatus';
+  import { useTasksStore } from '@/stores/taskStore';
 
   interface TaskCardStatusProps {
-    status: TaskStatus;
+    taskId: string;
   }
-  defineProps<TaskCardStatusProps>();
+  const props = defineProps<TaskCardStatusProps>();
+
+  const taskStore = useTasksStore();
+
+  const task = computed(() => taskStore.getTaskById(props.taskId));
+  const taskStatus = computed(() => task.value?.status);
 </script>
 
 <template>
   <span 
+    v-if="taskStatus"
     class="status-badge" 
-    :class="TaskStatusUtils.getStatusClass(status)"
+    :class="TaskStatusUtils.getStatusClass(taskStatus)"
   >
-    {{ TaskStatusUtils.getStatusLabel(status) }}
+    {{ TaskStatusUtils.getStatusLabel(taskStatus) }}
   </span>
 </template>
 

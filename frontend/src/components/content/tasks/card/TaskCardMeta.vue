@@ -67,7 +67,7 @@
         {{ formatted }}
       </div>
 
-      <task-card-status :status="task.status" />
+      <task-card-status :task-id="task.id" />
     </div>
   </div>
 </template>
