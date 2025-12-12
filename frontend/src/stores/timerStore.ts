@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { TaskStatus } from '@/interface/task.interface';
+import { useTasksStore } from '@/stores/taskStore';
 
 interface ActiveTimer {
   taskId: string;
@@ -109,7 +110,7 @@ export const useTimerStore = defineStore('timer', () => {
     }
   }
 
-  function startTimer(taskId: string, taskTitle: string): boolean {
+  async function startTimer(taskId: string, taskTitle: string): Promise<boolean> {
     if (activeTimer.value && activeTimer.value.taskId !== taskId) {
       return false;
     }
@@ -128,11 +129,17 @@ export const useTimerStore = defineStore('timer', () => {
     startInterval();
     saveToStorage();
 
-    console.log('[TimerStore] Timer started for task:', taskTitle);
+    const tasksStore = useTasksStore();
+    try {
+      await tasksStore.updateTaskStatus(taskId, 'in_progress');
+      console.log('[TimerStore] Timer started for task:', taskTitle);
+    } catch (error) {
+      console.error('[TimerStore] Failed to update task status:', error);
+    }
     return true;
   }
 
-  function stopTimer(taskStatus: TaskStatus): LastSession | null {
+  async function stopTimer(taskStatus: TaskStatus): Promise<LastSession | null> {
     if (!activeTimer.value) return null;
 
     stopInterval();
@@ -148,8 +155,15 @@ export const useTimerStore = defineStore('timer', () => {
     };
 
     lastSession.value = session;
-    activeTimer.value = null;
+    
+    const tasksStore = useTasksStore();
+    try {
+      await tasksStore.updateTaskStatus(activeTimer.value.taskId, taskStatus);
+    } catch (error) {
+      console.error('[TimerStore] Failed to update task status on stop:', error);
+    }
 
+    activeTimer.value = null;
     saveToStorage();
 
     console.log('[TimerStore] Timer stopped. Session:', session);

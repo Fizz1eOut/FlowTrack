@@ -8,7 +8,7 @@ export class TaskStatusUtils {
   private static readonly ALLOWED_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
     backlog: ['planned', 'in_progress', 'done'],
     planned: ['in_progress', 'done', 'backlog'],
-    in_progress: ['done', 'planned'],
+    in_progress: ['done', 'planned', 'backlog'],
     done: ['planned', 'backlog', 'in_progress'],
     archived: ['backlog', 'planned', 'in_progress']
   };

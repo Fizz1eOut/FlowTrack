@@ -55,7 +55,7 @@
 <template>
   <div class="task-card-header">
     <div class="task-card-header__field">
-      <div class="task-card-header__row"> 
+      <div class="task-card-header__row" @click.stop> 
         <app-checkbox 
           :model-value="isCompleted"
           :disabled="!canCheck"
@@ -116,6 +116,4 @@
     right: 0;
     left: unset;
   }
-
-  
 </style>
