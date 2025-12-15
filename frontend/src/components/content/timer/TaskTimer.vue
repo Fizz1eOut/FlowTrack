@@ -5,12 +5,13 @@
   import type { TaskResponse } from '@/interface/task.interface';
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
+  import TimerConflict from '@/components/content/timer/TimerConflict.vue';
 
-  interface AppTaskTimerProps {
+  interface TaskTimerProps {
     task: TaskResponse;
     disabled?: boolean;
   }
-  const props = withDefaults(defineProps<AppTaskTimerProps>(), {
+  const props = withDefaults(defineProps<TaskTimerProps>(), {
     disabled: false
   });
 
@@ -49,7 +50,7 @@
     if (props.disabled) return;
 
     if (hasConflict.value) {
-      showToast(`You already have a timer running for the task:"${timerStore.activeTimer?.taskTitle}"`, 'error');
+      showConflictDialog.value = true;
       return;
     }
 
@@ -61,8 +62,8 @@
     showToast('The timer has started', 'success');
   }
 
-  function stopTimer() {
-    const session = timerStore.stopTimer(props.task.status);
+  async function stopTimer() {
+    const session = await timerStore.stopTimer(props.task.status);
     
     if (session) {
       emit('timer-stopped', session.minutesSpent);
@@ -70,9 +71,9 @@
     }
   }
 
-  function handleConflictStopAndStart() {
+  async function handleConflictConfirm() {
     const currentTaskStatus = props.task.status;
-    timerStore.stopTimer(currentTaskStatus);
+    await timerStore.stopTimer(currentTaskStatus);
     timerStore.startTimer(props.task.id, props.task.title);
     showConflictDialog.value = false;
   }
@@ -108,25 +109,12 @@
       <span class="task-timer__display">{{ formattedTime }}</span>
     </app-button>
 
-    <div v-if="showConflictDialog" class="task-timer-conflict">
-      <div class="task-timer-conflict__overlay" @click="handleConflictCancel"></div>
-      <div class="task-timer-conflict__dialog">
-        <h3 class="task-timer-conflict__title">Таймер уже запущен</h3>
-        <p class="task-timer-conflict__text">
-          У вас уже запущен таймер для задачи 
-          <strong>"{{ timerStore.activeTimer?.taskTitle }}"</strong>.
-          Остановить его и запустить новый?
-        </p>
-        <div class="task-timer-conflict__actions">
-          <app-button @click="handleConflictCancel">
-            Отмена
-          </app-button>
-          <app-button primary @click="handleConflictStopAndStart">
-            Остановить и запустить новый
-          </app-button>
-        </div>
-      </div>
-    </div>
+    <timer-conflict 
+      :show="showConflictDialog"
+      :task-title="timerStore.activeTimer?.taskTitle || ''"
+      @confirm="handleConflictConfirm"
+      @cancel="handleConflictCancel"
+    />
   </div>
 </template>
 
