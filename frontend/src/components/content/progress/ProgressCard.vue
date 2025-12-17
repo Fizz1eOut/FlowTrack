@@ -48,7 +48,11 @@
 
           <div class="progress-card__info">
             <span class="progress-card__xp--current">
-              XP: {{ progressInfo.progressXP }} / {{ progressInfo.nextLevelXP }}
+              <span class="progress-card__xp--current">
+                XP: {{ progressInfo.progressXP }} /
+                {{ progressInfo.nextLevelXP - progressInfo.currentLevelXP }}
+              </span>
+
             </span>
             <span class="progress-card__xp--percentage">
               Progress: {{ progressInfo.progressPercentage }}%
