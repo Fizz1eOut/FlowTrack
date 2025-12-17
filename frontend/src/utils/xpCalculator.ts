@@ -69,19 +69,14 @@ export class XPCalculator {
 
 
   static getProgressToNextLevel(
-    currentXP: number,
+    totalXP: number,
     currentLevel: number,
-    levelRequirements: Array<{ level: number; xp_required: number; xp_total: number }>
-  ): {
-    currentLevelXP: number;
-    nextLevelXP: number;
-    progressXP: number;
-    progressPercentage: number;
-  } {
-    const currentLevelData = levelRequirements.find(lr => lr.level === currentLevel);
-    const nextLevelData = levelRequirements.find(lr => lr.level === currentLevel + 1);
+    levelRequirements: Array<{ level: number; xp_total: number }>
+  ) {
+    const current = levelRequirements.find(l => l.level === currentLevel);
+    const next = levelRequirements.find(l => l.level === currentLevel + 1);
 
-    if (!currentLevelData || !nextLevelData) {
+    if (!current || !next) {
       return {
         currentLevelXP: 0,
         nextLevelXP: 0,
@@ -90,15 +85,17 @@ export class XPCalculator {
       };
     }
 
-    const progressXP = currentXP - currentLevelData.xp_total;
-    const xpNeeded = nextLevelData.xp_required;
-    const progressPercentage = Math.min(100, Math.floor((progressXP / xpNeeded) * 100));
+    const progressXP = totalXP - current.xp_total;
+    const xpNeeded = next.xp_total - current.xp_total;
 
     return {
-      currentLevelXP: currentLevelData.xp_total,
-      nextLevelXP: nextLevelData.xp_total,
+      currentLevelXP: current.xp_total,
+      nextLevelXP: next.xp_total,
       progressXP,
-      progressPercentage
+      progressPercentage: Math.min(
+        100,
+        Math.floor((progressXP / xpNeeded) * 100)
+      )
     };
   }
 }
