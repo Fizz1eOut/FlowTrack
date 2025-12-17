@@ -25,7 +25,7 @@ export const useProgressStore = defineStore('progress', () => {
     }
 
     return XPCalculator.getProgressToNextLevel(
-      userProgress.value.current_xp,
+      userProgress.value.total_xp,
       userProgress.value.level,
       levelRequirements.value
     );

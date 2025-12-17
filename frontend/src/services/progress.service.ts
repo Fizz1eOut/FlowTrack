@@ -194,7 +194,6 @@ export class ProgressService {
       .from('user_progress')
       .update({
         level: newLevel,
-        current_xp: newTotalXP,
         total_xp: newTotalXP,
         tasks_completed: currentProgress.tasks_completed + 1,
         updated_at: new Date().toISOString()
@@ -254,7 +253,6 @@ export class ProgressService {
       .from('user_progress')
       .update({
         level: newLevel,
-        current_xp: newTotalXP,
         total_xp: newTotalXP,
         tasks_completed: Math.max(0, currentProgress.tasks_completed - 1),
         updated_at: new Date().toISOString()
