@@ -5,6 +5,7 @@
     modelValue: string | number;
     placeholder?: string;
     type?: string;
+    disabled?: boolean;
   }
   const props = defineProps<SearchInputProps>();
 
@@ -32,6 +33,7 @@
       :type="type || 'text'"
       class="input"
       :placeholder="placeholder"
+      :disabled="disabled"
       @input="handleInput"
     />
 
