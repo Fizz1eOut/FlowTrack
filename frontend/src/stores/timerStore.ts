@@ -2,6 +2,9 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { TaskStatus } from '@/interface/task.interface';
 import { useTasksStore } from '@/stores/taskStore';
+import { TimerHistoryService } from '@/services/timerHistory.service';
+import type { TimerHistoryRecord } from '@/interface/timerHistory.interface';
+import { useAuthStore } from '@/stores/authStore';
 
 interface ActiveTimer {
   taskId: string;
@@ -25,6 +28,7 @@ export const useTimerStore = defineStore('timer', () => {
   const activeTimer = ref<ActiveTimer | null>(null);
   const lastSession = ref<LastSession | null>(null);
   const intervalId = ref<number | null>(null);
+  const timerHistory = ref<TimerHistoryRecord[]>([]);
 
   const hasActiveTimer = computed(() => activeTimer.value !== null);
   const activeTimerCount = computed(() => hasActiveTimer.value ? 1 : 0);
@@ -144,8 +148,9 @@ export const useTimerStore = defineStore('timer', () => {
 
     stopInterval();
 
-    const minutesSpent = Math.floor(activeTimer.value.elapsedSeconds / 60);
-    
+    const durationSeconds = activeTimer.value.elapsedSeconds;
+    const minutesSpent = Math.floor(durationSeconds / 60);
+  
     const session: LastSession = {
       taskId: activeTimer.value.taskId,
       taskTitle: activeTimer.value.taskTitle,
@@ -155,12 +160,46 @@ export const useTimerStore = defineStore('timer', () => {
     };
 
     lastSession.value = session;
-    
+  
     const tasksStore = useTasksStore();
+    const authStore = useAuthStore();
+  
     try {
       await tasksStore.updateTaskStatus(activeTimer.value.taskId, taskStatus);
+    
+      if (authStore.userId && durationSeconds >= 60) {
+        const task = tasksStore.getTaskById(activeTimer.value.taskId);
+      
+        let recurringTemplateId: string | null = null;
+      
+        if (task) {
+          if (task.original_task_id) {
+            recurringTemplateId = task.original_task_id;
+          } else if (task.is_recurring) {
+            recurringTemplateId = task.id;
+          }
+        }
+      
+        await TimerHistoryService.create(authStore.userId, {
+          task_id: activeTimer.value.taskId,
+          task_title: activeTimer.value.taskTitle,
+          started_at: new Date(activeTimer.value.startTime).toISOString(),
+          stopped_at: session.stoppedAt,
+          duration_seconds: durationSeconds,
+          duration_minutes: minutesSpent,
+          final_status: taskStatus,
+          recurring_template_id: recurringTemplateId
+        });
+      
+        console.log('[TimerStore] Timer session saved to history', {
+          taskId: activeTimer.value.taskId,
+          recurringTemplateId
+        });
+      
+        await loadHistory(activeTimer.value.taskId);
+      }
     } catch (error) {
-      console.error('[TimerStore] Failed to update task status on stop:', error);
+      console.error('[TimerStore] Failed to update task status or save history:', error);
     }
 
     activeTimer.value = null;
@@ -193,11 +232,33 @@ export const useTimerStore = defineStore('timer', () => {
     localStorage.removeItem(LAST_SESSION_KEY);
   }
 
+  async function loadHistory(taskId: string): Promise<void> {
+    try {
+      timerHistory.value = await TimerHistoryService.fetchByTaskOrTemplate(taskId);
+      console.log('[TimerStore] Loaded timer history:', timerHistory.value.length, 'records');
+    } catch (error) {
+      console.error('[TimerStore] Failed to load timer history:', error);
+      timerHistory.value = [];
+    }
+  }
+
+  async function deleteHistoryRecord(historyId: string, taskId: string): Promise<boolean> {
+    try {
+      await TimerHistoryService.delete(historyId);
+      await loadHistory(taskId);
+      return true;
+    } catch (error) {
+      console.error('[TimerStore] Failed to delete history record:', error);
+      return false;
+    }
+  }
+
   loadFromStorage();
 
   return {
     activeTimer: computed(() => activeTimer.value),
     lastSession: computed(() => lastSession.value),
+    timerHistory: computed(() => timerHistory.value),
     
     hasActiveTimer,
     activeTimerCount,
@@ -211,6 +272,8 @@ export const useTimerStore = defineStore('timer', () => {
     isTimerActiveForTask,
     getActiveTimerTaskId,
     clearLastSession,
-    loadFromStorage
+    loadFromStorage,
+    loadHistory,
+    deleteHistoryRecord
   };
 });

@@ -243,7 +243,7 @@ export class TaskService {
   
     console.log('[TaskService] Toggle completion:', {
       taskId,
-      currentStatus,
+      currentStatus,  
       taskTitle: task.title
     });
 
