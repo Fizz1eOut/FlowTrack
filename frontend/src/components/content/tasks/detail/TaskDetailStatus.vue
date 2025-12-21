@@ -68,4 +68,7 @@
 </template>
 
 <style scoped>
+  :deep(.task-form-status__name) {
+    display: none;
+  }
 </style>
