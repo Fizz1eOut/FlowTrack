@@ -16,7 +16,7 @@
 <template>
   <div v-if="hasSubtasks" class="task-progress">
     <div class="task-progress__row">
-      <div class="task-progress__title"><span>Подзадачи: {{ progress.completed }}/{{ progress.total }}</span></div>
+      <div class="task-progress__title"><span>Subtasks: {{ progress.completed }}/{{ progress.total }}</span></div>
       <div class="task-progress__percentage">{{ progress.percentage }}%</div>
     </div>
 
