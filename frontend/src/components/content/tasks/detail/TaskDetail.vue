@@ -1,10 +1,15 @@
 <script setup lang="ts">
   import { ref, computed, watch, onMounted } from 'vue';
   import type { TaskResponse } from '@/interface/task.interface';
-  import { supabase } from '@/utils/supabase';
-  import TaskDetailHeader from '@/components/content/tasks/detail/TaskDetailHeader.vue';
-  import TaskTimer from '@/components/content/timer/TaskTimer.vue';
   import { useTimerStore } from '@/stores/timerStore';
+  import TaskDetailHeader from '@/components/content/tasks/detail/TaskDetailHeader.vue';
+  import TaskDetailActions from '@/components/content/tasks/detail/TaskDetailActions.vue';
+  import TaskDetailOverview from '@/components/content/tasks/detail/TaskDetailOverview.vue';
+  import TaskDetailTimerHistory from '@/components/content/tasks/detail/TaskDetailTimerHistory.vue';
+  import AppSubtitle from '@/components/base/AppSubtitle.vue';
+  import AppTabs from '@/components/base/AppTabs.vue';
+  import AppButton from '@/components/base/AppButton.vue';
+  import AppIcon from '@/components/base/AppIcon.vue';
 
   interface TaskDetailProps {
     task: TaskResponse
@@ -12,7 +17,6 @@
   const props = defineProps<TaskDetailProps>();
 
   const timerStore = useTimerStore();
-  
   const currentActualMinutes = ref<number>(props.task.actual_minutes || 0);
 
   const formattedSpentTime = computed(() => {
@@ -54,30 +58,6 @@
     return formattedSpentTime.value;
   });
 
-  async function handleTimerStopped(minutesSpent: number) {
-    const newTotal = currentActualMinutes.value + minutesSpent;
-    currentActualMinutes.value = newTotal;
-
-    await saveActualMinutes(newTotal);
-
-    console.log('[TaskDetail] Timer stopped, total minutes:', newTotal);
-  }
-
-  async function saveActualMinutes(minutes: number) {
-    if (!props.task.id) return;
-  
-    const { error } = await supabase
-      .from('tasks')
-      .update({ actual_minutes: minutes })
-      .eq('id', props.task.id);
-    
-    if (error) {
-      console.error('[TaskDetail] Saving error:', error);
-    } else {
-      console.log('[TaskDetail] Saved actual_minutes:', minutes);
-    }
-  }
-
   watch(() => props.task.actual_minutes, (newValue) => {
     if (newValue !== undefined && newValue !== null) {
       currentActualMinutes.value = newValue;
@@ -89,30 +69,67 @@
       currentActualMinutes.value = props.task.actual_minutes;
     }
   });
+
+  function handleMinutesUpdated(newMinutes: number) { 
+    currentActualMinutes.value = newMinutes;
+  }
+
+  const tabs = [
+    { label: 'Description', slotName: 'overview' },
+    { label: 'Timer History', slotName: 'timer-history' }
+  ];
 </script>
 
 <template>
   <div class="task-detail">
-    {{ task.title }}
-    <task-detail-header />
-
-    <task-timer 
-      :task="task"
-      @timer-stopped="handleTimerStopped"
-    />
-
-    <div class="task-detail__time">
-      <label>Затрачено:</label>
-      <input 
-        type="text" 
-        :value="displayTime"  
-        disabled
-        :class="{ 'is-running': isTimerActive }"
-      />
+    <div class="task-detail__header">
+      <app-subtitle>
+        {{ task.title }}
+      </app-subtitle>
+      <app-button @click="$emit('close')" class="task-detail__btn--cross">
+        <app-icon 
+          name="cross"
+          size="var(--fs-xl)"
+          color="var(--color-gray)"
+        />
+      </app-button>
     </div>
+
+    <task-detail-header :task="task" />
+
+    <app-tabs
+      :tabs="tabs"
+    >
+      <template #overview>
+        <task-detail-actions 
+          :task="task"
+          @minutes-updated="handleMinutesUpdated"
+        />
+        <task-detail-overview 
+          :task="task"
+          :display-time="displayTime"
+          :is-timer-active="isTimerActive"
+        />
+      </template>
+
+      <template #timer-history>
+        <task-detail-timer-history 
+          :task="task"
+        />
+      </template>
+    </app-tabs>
   </div>
 </template>
 
 <style scoped>
-
+  .task-detail__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .task-detail__btn--cross {
+    width: var(--fs-xl);
+    height: var(--fs-xl);
+  }
 </style>

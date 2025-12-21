@@ -90,11 +90,14 @@
       </div>
     </div>
 
-    <task-detail-subtasks :task="task"/>
+    <task-detail-subtasks :task="task" class="subtasks" />
   </div>
 </template>
 
 <style scoped>
+  .task-detail-wrapper {
+    margin-top: var(--space-xl);
+  }
   .task-detail__fields {
     display: flex;
     justify-content: space-between;
@@ -133,6 +136,9 @@
   }
   .is-running :deep(.input) {
     animation: pulse-input 2.5s ease-in-out infinite;
+  }
+  .subtasks {
+    margin-top: var(--space-xl);
   }
 
   @keyframes pulse-input {
