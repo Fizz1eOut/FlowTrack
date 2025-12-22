@@ -6,7 +6,7 @@ import svgLoader from 'vite-svg-loader';
 import { configDefaults } from 'vitest/config';
 
 export default defineConfig({
-  base: '/FlowTrack',
+  base: '/FlowTrack/',
   plugins: [
     vue(),
     vueDevTools(),
@@ -28,14 +28,4 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
     },
   },
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  }
 });
