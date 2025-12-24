@@ -5,24 +5,65 @@ import { XPCalculator } from '@/utils/xpCalculator';
 
 export class ProgressService {
 
-  static async getUserProgress(userId: string): Promise<UserProgress> {
-    let { data } = await supabase
+  static async getUserProgress(userId: string): Promise<UserProgress | null> {
+    const { data, error } = await supabase
       .from('user_progress')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!data) {
-      const { data: created, error: createError } = await supabase
-        .from('user_progress')
-        .insert({ user_id: userId })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-      data = created;
+    if (error && error.code !== 'PGRST116') {
+      throw error;
     }
-    return data;
+
+    return data ?? null;
+  }
+
+  static async ensureUserProgress(userId: string): Promise<UserProgress> {
+  // Сначала пытаемся получить существующую запись
+    let retries = 3;
+  
+    while (retries > 0) {
+      const existing = await this.getUserProgress(userId);
+      if (existing) {
+        return existing;
+      }
+    
+      // Если записи нет, пытаемся создать
+      try {
+        console.log('[ProgressService] Creating user_progress for user:', userId);
+
+        const { data, error } = await supabase
+          .from('user_progress')
+          .insert({
+            user_id: userId,
+            level: 1,
+            total_xp: 0,
+            tasks_completed: 0
+          })
+          .select()
+          .single();
+
+        if (error) {
+        // Если ошибка дубликата - это нормально, просто получаем существующую запись
+          if (error.code === '23505') { // Duplicate key error
+            console.log('[ProgressService] Record already exists, fetching...');
+            await new Promise(r => setTimeout(r, 200));
+            retries--;
+            continue;
+          }
+          throw error;
+        }
+      
+        return data;
+      } catch (err) {
+        retries--;
+        if (retries === 0) throw err;
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
+  
+    throw new Error('Failed to ensure user progress after retries');
   }
 
   static async getLevelRequirements(): Promise<LevelRequirement[]> {
@@ -166,7 +207,7 @@ export class ProgressService {
     const completedSubtasksCount = task.subtasks?.filter(st => st.completed).length || 0;
     const xpEarned = XPCalculator.calculateTaskXP(task.priority, completedSubtasksCount);
 
-    const currentProgress = await this.getUserProgress(userId);
+    const currentProgress = await this.ensureUserProgress(userId);
     const levelRequirements = await this.getLevelRequirements();
 
     const newTotalXP = currentProgress.total_xp + xpEarned;
@@ -188,7 +229,7 @@ export class ProgressService {
         workspace_id: task.workspace_id
       });
 
-    if (completedTaskError) throw completedTaskError;
+    if (completedTaskError) throw completedTaskError; 
 
     const { error: progressError } = await supabase
       .from('user_progress')
@@ -243,7 +284,7 @@ export class ProgressService {
       throw deleteError;
     }
 
-    const currentProgress = await this.getUserProgress(userId);
+    const currentProgress = await this.ensureUserProgress(userId);
     const levelRequirements = await this.getLevelRequirements();
 
     const newTotalXP = Math.max(0, currentProgress.total_xp - xpToRemove);

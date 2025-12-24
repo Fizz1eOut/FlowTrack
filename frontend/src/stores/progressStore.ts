@@ -43,9 +43,7 @@ export const useProgressStore = defineStore('progress', () => {
   });
 
   const currentLevel = computed(() => userProgress.value?.level || 1);
-
   const tasksCompleted = computed(() => userProgress.value?.tasks_completed || 0);
-
   const totalXP = computed(() => userProgress.value?.total_xp || 0);
 
   const currentStreak = computed(() => {
@@ -60,7 +58,6 @@ export const useProgressStore = defineStore('progress', () => {
     return todayCompletion?.tasks_completed || 0;
   });
 
-
   const xpEarnedToday = computed(() => {
     const today = new Date().toISOString().split('T')[0];
     const todayCompletion = dailyCompletions.value.find(
@@ -71,7 +68,7 @@ export const useProgressStore = defineStore('progress', () => {
 
   async function fetchProgress(): Promise<void> {
     if (!authStore.userId) {
-      console.warn('[ProgressStore] User not authenticated');
+      console.warn('[ProgressStore] User not authenticated, skipping fetch');
       return;
     }
 
@@ -79,19 +76,44 @@ export const useProgressStore = defineStore('progress', () => {
     error.value = null;
 
     try {
-      const [progress, requirements, completions] = await Promise.all([
-        ProgressService.getUserProgress(authStore.userId),
-        ProgressService.getLevelRequirements(),
-        ProgressService.getDailyCompletions(authStore.userId)
-      ]);
-      
-      userProgress.value = progress;
+      console.log('[ProgressStore] Fetching progress for user:', authStore.userId);
+    
+      const requirements = await ProgressService.getLevelRequirements();
       levelRequirements.value = requirements;
-      dailyCompletions.value = completions;
+    
+      let retries = 5;
+      let lastError: Error | null = null;
+    
+      while (retries > 0) {
+        try {
+          const [progress, completions] = await Promise.all([
+            ProgressService.ensureUserProgress(authStore.userId),
+            ProgressService.getDailyCompletions(authStore.userId)
+          ]);
+        
+          userProgress.value = progress;
+          dailyCompletions.value = completions;
+        
+          console.log('[ProgressStore] Progress loaded successfully');
+          return;
+        } catch (err) {
+          lastError = err instanceof Error ? err : new Error(String(err));
+          retries--;
+        
+          if (retries > 0) {
+            console.warn(`[ProgressStore] Retry ${5 - retries}/5 after error:`, lastError.message);
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+      }
+    
+      throw lastError || new Error('Failed to fetch progress');
+    
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       error.value = message;
-      console.error('[ProgressStore] Fetch error:', err);
+      console.error('[ProgressStore] Fetch error after all retries:', err);
+    
     } finally {
       loading.value = false;
     }
