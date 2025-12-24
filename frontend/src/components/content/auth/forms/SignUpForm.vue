@@ -18,11 +18,13 @@
   const validationSchema = yup.object({
     name: yup.string()
       .required('Enter your name')
-      .matches(/^[A-ZА-Я][a-zа-яёЁA-ZА-Я]*$/,'Name must start with a capital letter'),
+      .matches(/^[A-ZА-Я][a-zа-яёЁA-ZА-Я]*$/, 'Name must start with a capital letter'),
     email: yup.string()
       .required('Enter your email')
       .email('Invalid email format'),
-    password: yup.string().required('Enter your password').min(6, 'At least 6 characters'),
+    password: yup.string()
+      .required('Enter your password')
+      .min(6, 'At least 6 characters'),
     confirmPassword: yup
       .string()
       .oneOf([yup.ref('password')], 'Passwords must match')
@@ -35,6 +37,7 @@
 
   const signupError = ref<string | null>(null);
   const loading = ref(false);
+  const isSubmitting = ref(false);
 
   const { handleSubmit } = useForm<SignUpFormValues>({ 
     validationSchema 
@@ -43,41 +46,83 @@
   const { value: name, errorMessage: nameError } = useField<string>('name', undefined, { initialValue: '' });
   const { value: email, errorMessage: emailError } = useField<string>('email', undefined, { initialValue: '' });
   const { value: password, errorMessage: passwordError } = useField<string>('password', undefined, { initialValue: '' });
-  const { value: confirmPassword, errorMessage: confirmPasswordError } = useField('confirmPassword', undefined, { initialValue: '' });
+  const { value: confirmPassword, errorMessage: confirmPasswordError } = useField<string>('confirmPassword', undefined, { initialValue: '' });
   const { value: acceptTerms, errorMessage: acceptTermsError } = useField<boolean>('acceptTerms', undefined, { initialValue: false });
-  
-  const hasError = computed(() => !!nameError.value || !!emailError.value || !!passwordError.value || !!confirmPasswordError.value || !!acceptTermsError.value);
+
+  const hasError = computed(() => 
+    !!nameError.value || 
+    !!emailError.value || 
+    !!passwordError.value || 
+    !!confirmPasswordError.value || 
+    !!acceptTermsError.value
+  );
 
   const onSubmit = handleSubmit(async (values: SignUpFormValues) => {
+    // Защита от повторных вызовов
+    if (isSubmitting.value || loading.value) {
+      console.warn('[SignUpForm] ⚠️ Already submitting - IGNORED');
+      return;
+    }
+
+    isSubmitting.value = true;
     signupError.value = null;
-  
+
     try {
       loading.value = true;
+  
+      console.log('[SignUpForm] 🔵 Form submitted:', {
+        email: values.email,
+        timestamp: new Date().toISOString()
+      });
     
       const result = await authStore.signUp({
-        email: values.email,
+        email: values.email.trim().toLowerCase(),
         password: values.password,
-        name: values.name,
+        name: values.name.trim(),
       });
 
+      console.log('[SignUpForm] 🟢 SignUp result:', result);
+
       if (!result.success) {
-        signupError.value = result.error ?? 'Registration error';
+        const errorLower = result.error?.toLowerCase() || '';
+      
+        if (errorLower.includes('already registered') || 
+          errorLower.includes('already exists') ||
+          errorLower.includes('duplicate')) {
+          signupError.value = 'This email is already registered. Please sign in instead.';
+        } else if (errorLower.includes('in progress')) {
+          signupError.value = 'Please wait, registration is in progress...';
+        } else {
+          signupError.value = result.error ?? 'Registration error. Please try again.';
+        }
       } else {
         if (values.acceptTerms) {
           localStorage.setItem('rememberMe', 'true');
         }
       
+        console.log('[SignUpForm] ✅ Registration successful, redirecting...');
+      
+        // Небольшая задержка перед редиректом
+        await new Promise(resolve => setTimeout(resolve, 500));
         router.push({ name: 'onboarding' });
       }
     } catch (err: unknown) {
-      signupError.value = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[SignUpForm] ❌ Unexpected error:', err);
+      signupError.value = err instanceof Error ? err.message : 'An unexpected error occurred';
     } finally {
       loading.value = false;
+    
+      // Сбрасываем флаг через задержку
+      setTimeout(() => {
+        isSubmitting.value = false;
+        console.log('[SignUpForm] 🔵 Submit lock released');
+      }, 2000);
     }
   });
 
   const showPassword = ref(false);
   const showConfirmPassword = ref(false);
+
   const togglePasswordVisibility = (field: 'password' | 'confirmPassword') => {
     if (field === 'password') {
       showPassword.value = !showPassword.value;
@@ -94,18 +139,25 @@
       <app-input 
         v-model="name" 
         placeholder="Enter your name"
-        :class="{ 'has-error': nameError }" 
+        :class="{ 'has-error': nameError }"
+        :disabled="loading || isSubmitting"
       />
+      <span v-if="nameError" class="error-message">{{ nameError }}</span>
     </div>
+
     <div class="auth__item">
       <div class="auth__name">Email</div>
       <app-input 
         v-model="email"
+        type="email"
         placeholder="Email"
-        :class="{ 'has-error': emailError }" 
+        :class="{ 'has-error': emailError }"
+        :disabled="loading || isSubmitting"
+        autocomplete="email"
       />
-      <span class="error-message">{{ emailError }}</span>
+      <span v-if="emailError" class="error-message">{{ emailError }}</span>
     </div>
+
     <div class="auth__item">
       <div class="auth__name">Password</div>
       <app-input 
@@ -113,11 +165,14 @@
         :type="showPassword ? 'text' : 'password'" 
         placeholder="Password"
         :class="{ 'has-error': passwordError }"
+        :disabled="loading || isSubmitting"
+        autocomplete="new-password"
       />
       <app-button 
         type="button"
         class="toggle-password" 
         @click="togglePasswordVisibility('password')"
+        :disabled="loading || isSubmitting"
       >
         <app-icon 
           :name="showPassword ? 'eye-off' : 'eye'" 
@@ -125,8 +180,9 @@
           style="color: var(--white)" 
         />
       </app-button>
-      <span class="error-message">{{ passwordError }}</span>
+      <span v-if="passwordError" class="error-message">{{ passwordError }}</span>
     </div>
+
     <div class="auth__item">
       <div class="auth__name">Confirm password</div>
       <app-input 
@@ -134,11 +190,14 @@
         :type="showConfirmPassword ? 'text' : 'password'"
         placeholder="Confirm password"
         :class="{ 'has-error': confirmPasswordError }"
+        :disabled="loading || isSubmitting"
+        autocomplete="new-password"
       />
       <app-button 
         type="button"
         class="toggle-password" 
         @click="togglePasswordVisibility('confirmPassword')"
+        :disabled="loading || isSubmitting"
       >
         <app-icon 
           :name="showConfirmPassword ? 'eye-off' : 'eye'" 
@@ -146,13 +205,14 @@
           style="color: var(--white)" 
         />
       </app-button>
-      <span class="error-message">{{ confirmPasswordError }}</span>
+      <span v-if="confirmPasswordError" class="error-message">{{ confirmPasswordError }}</span>
     </div>
 
     <div class="auth__options">
       <app-checkbox 
         v-model="acceptTerms"
         :class="{ 'has-error': acceptTermsError }"
+        :disabled="loading || isSubmitting"
       >
         I accept the terms of use and privacy policy
       </app-checkbox>
@@ -164,13 +224,16 @@
     <div class="auth__submit">
       <app-button 
         type="submit"
-        :primary="!hasError"
-        :disabled="hasError || loading"
+        :primary="!hasError && !loading && !isSubmitting"
+        :disabled="hasError || loading || isSubmitting"
       >
-        {{ loading ? 'Signing up...' : 'Sign Up' }}
+        <span v-if="loading || isSubmitting">
+          Signing up...
+        </span>
+        <span v-else>Sign Up</span>
       </app-button>
       
-      <div v-if="signupError" class="error-login">
+      <div v-if="signupError" class="error-login" style="margin-top: 12px; color: #ef4444;">
         {{ signupError }}
       </div>
     </div>
