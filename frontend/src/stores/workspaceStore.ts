@@ -30,8 +30,13 @@ export const useWorkspaceStore = defineStore('workspaces', () => {
     error.value = null;
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('The user is not authorized');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        console.warn('[WorkspaceStore] User not ready yet, skip fetchWorkspaces');
+        return [];
+      }
+
 
       const { data, error: dbError } = await supabase
         .from('workspaces')
