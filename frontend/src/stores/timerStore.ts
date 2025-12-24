@@ -147,28 +147,33 @@ export const useTimerStore = defineStore('timer', () => {
     if (!activeTimer.value) return null;
 
     stopInterval();
-
-    const durationSeconds = activeTimer.value.elapsedSeconds;
-    const minutesSpent = Math.floor(durationSeconds / 60);
   
+    const timerData = { ...activeTimer.value };
+    const durationSeconds = timerData.elapsedSeconds;
+    const minutesSpent = Math.floor(durationSeconds / 60);
+
+    activeTimer.value = null;
+    saveToStorage();
+
     const session: LastSession = {
-      taskId: activeTimer.value.taskId,
-      taskTitle: activeTimer.value.taskTitle,
+      taskId: timerData.taskId,
+      taskTitle: timerData.taskTitle,
       taskStatus,
       minutesSpent,
       stoppedAt: new Date().toISOString()
     };
 
     lastSession.value = session;
-  
+    saveToStorage();
+
     const tasksStore = useTasksStore();
     const authStore = useAuthStore();
-  
+
     try {
-      await tasksStore.updateTaskStatus(activeTimer.value.taskId, taskStatus);
+      await tasksStore.updateTaskStatus(timerData.taskId, taskStatus);
     
       if (authStore.userId && durationSeconds >= 60) {
-        const task = tasksStore.getTaskById(activeTimer.value.taskId);
+        const task = tasksStore.getTaskById(timerData.taskId);
       
         let recurringTemplateId: string | null = null;
       
@@ -181,9 +186,9 @@ export const useTimerStore = defineStore('timer', () => {
         }
       
         await TimerHistoryService.create(authStore.userId, {
-          task_id: activeTimer.value.taskId,
-          task_title: activeTimer.value.taskTitle,
-          started_at: new Date(activeTimer.value.startTime).toISOString(),
+          task_id: timerData.taskId,
+          task_title: timerData.taskTitle,
+          started_at: new Date(timerData.startTime).toISOString(),
           stopped_at: session.stoppedAt,
           duration_seconds: durationSeconds,
           duration_minutes: minutesSpent,
@@ -191,19 +196,13 @@ export const useTimerStore = defineStore('timer', () => {
           recurring_template_id: recurringTemplateId
         });
       
-        console.log('[TimerStore] Timer session saved to history', {
-          taskId: activeTimer.value.taskId,
-          recurringTemplateId
-        });
+        console.log('[TimerStore] Timer session saved to history');
       
-        await loadHistory(activeTimer.value.taskId);
+        await loadHistory(timerData.taskId);
       }
     } catch (error) {
       console.error('[TimerStore] Failed to update task status or save history:', error);
     }
-
-    activeTimer.value = null;
-    saveToStorage();
 
     console.log('[TimerStore] Timer stopped. Session:', session);
     return session;
