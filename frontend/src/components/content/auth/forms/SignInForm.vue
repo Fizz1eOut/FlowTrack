@@ -53,7 +53,7 @@
           localStorage.setItem('rememberMe', 'true');
         }
       
-        router.push({ name: 'dashboard' });
+        router.push('/dashboard/today');
       }
     } catch (err: unknown) {
       loginError.value = err instanceof Error ? err.message : 'Unknown error';

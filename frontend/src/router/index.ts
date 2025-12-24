@@ -26,7 +26,6 @@ const routes: RouteRecordRaw[] = [
   { path: '/signup', name: 'signup', component: SignUpView, meta: { title: 'Sign Up', requiresAuth: false, guestOnly: true } },
   { path: '/signin', name: 'signin', component: SignInView, meta: { title: 'Sign In', requiresAuth: false, guestOnly: true } },
   { path: '/onboarding', name: 'onboarding', component: OnboardingView, meta: { title: 'Get Started', requiresAuth: true } },
-  { path: '/dashboard', name: 'dashboard', component: DashboardLayoutView, meta: { title: 'Dashboard', requiresAuth: true } },
   { path: '/forgot-password', name: 'forgot-password', component: ForgotPasswordView, meta: { title: 'Forgot password', requiresAuth: false } },
   { path: '/reset-password', name: 'reset-password', component: ResetPasswordView, meta: { title: 'Reset password', requiresAuth: false } },
 

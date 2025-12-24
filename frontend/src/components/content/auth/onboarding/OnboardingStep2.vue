@@ -53,7 +53,7 @@
       return;
     }
 
-    router.push({ name: 'dashboard' });
+    router.push('/dashboard/today');
     showToast('Setup is complete! Welcome to FlowTrack.', 'success');
   };
 </script>
