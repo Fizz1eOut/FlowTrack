@@ -57,11 +57,12 @@
     return 'Sessions';
   });
 
-  watch(() => timerStore.lastSession, (newSession) => {
+  watch(() => timerStore.lastSession, async (newSession) => {
     if (newSession && newSession.taskId === props.task.id) {
-      timerStore.loadHistory(props.task.id);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await timerStore.loadHistory(props.task.id);
     }
-  });
+  }, { deep: true });
 
   onMounted(() => {
     timerStore.loadHistory(props.task.id);

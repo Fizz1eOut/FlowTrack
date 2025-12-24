@@ -14,14 +14,15 @@
   const taskStore = useTasksStore();
   const timerStore = useTimerStore();
 
-  function stopActiveTimer() {
+  async function stopActiveTimer() {
     if (!timerStore.activeTimer) return;
 
     const task = taskStore.getTaskById(timerStore.activeTimer.taskId);
 
     if (!task) {
       console.warn('[TaskTimer] Task not found');
-      timerStore.stopTimer('planned');
+      await timerStore.stopTimer('planned');
+      emit('close');
       return;
     }
 
@@ -29,10 +30,9 @@
       ? task.previous_status
       : TaskStatusUtils.getPreviousStatus(task);
 
-    timerStore.stopTimer(newStatus);
+    await timerStore.stopTimer(newStatus);
     emit('close');
   }
-
 
   function openTask() {
     if (!timerStore.activeTimer) return;

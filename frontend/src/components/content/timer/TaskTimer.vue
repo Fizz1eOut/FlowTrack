@@ -63,11 +63,18 @@
   }
 
   async function stopTimer() {
-    const session = await timerStore.stopTimer(props.task.status);
+    try {
+      const session = await timerStore.stopTimer(props.task.status);
     
-    if (session) {
-      emit('timer-stopped', session.minutesSpent);
-      showToast('The timer has stopped', 'success');
+      if (session) {
+        emit('timer-stopped', session.minutesSpent);
+        showToast('The timer has stopped', 'success');
+      
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
+    } catch (error) {
+      console.error('[TaskTimer] Error stopping timer:', error);
+      showToast('Failed to stop timer', 'error');
     }
   }
 
