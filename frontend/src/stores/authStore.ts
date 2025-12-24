@@ -1,13 +1,15 @@
 import { defineStore } from 'pinia';
 import { ref, computed, readonly } from 'vue';
 import { supabase } from '@/utils/supabase';
-import type { User, Session, AuthError, AuthChangeEvent } from '@supabase/supabase-js';
+import type { User, Session, AuthError } from '@supabase/supabase-js';
 import type { 
   LoginCredentials, 
   RegisterCredentials, 
   CustomAuthResponse,
   UserProfile
 } from '@/interface/auth.interface';
+
+let isSignUpInProgress = false;
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
@@ -30,57 +32,157 @@ export const useAuthStore = defineStore('auth', () => {
   const loadUserProfile = async () => {
     if (!user.value) return;
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.value.id)
-      .single();
+    let retries = 5;
 
-    if (error) {
-      console.error('[AuthStore] profile error:', error);
-      return;
+    while (retries > 0) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.value.id)
+        .maybeSingle();
+
+      if (data) {
+        userProfile.value = data as UserProfile;
+        return;
+      }
+
+      if (error) {
+        console.warn('[AuthStore] profile fetch error, retrying...', error.message);
+      }
+
+      retries--;
+      await new Promise(r => setTimeout(r, 300));
     }
 
-    userProfile.value = data as UserProfile;
+    console.error('[AuthStore] profile not found after retries');
   };
 
   const signUp = async (credentials: RegisterCredentials): Promise<CustomAuthResponse> => {
+    if (isSignUpInProgress) {
+      console.warn('[AuthStore] ⚠️ SignUp already in progress - BLOCKING duplicate call');
+      return { 
+        success: false, 
+        error: 'Registration is already in progress. Please wait.' 
+      };
+    }
+
+    if (loading.value) {
+      console.warn('[AuthStore] ⚠️ Loading state active - BLOCKING duplicate call');
+      return { 
+        success: false, 
+        error: 'Another operation is in progress' 
+      };
+    }
+
     try {
+      isSignUpInProgress = true;
       loading.value = true;
       error.value = null;
 
+      const normalizedEmail = credentials.email.trim().toLowerCase();
+      const normalizedName = credentials.name.trim();
+
+      console.log('[AuthStore] 🔵 SignUp START:', {
+        email: normalizedEmail,
+        timestamp: new Date().toISOString(),
+        callStack: new Error().stack?.split('\n').slice(1, 4).join('\n')
+      });
+
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: credentials.email,
+        email: normalizedEmail,
         password: credentials.password,
         options: {
           data: {
-            full_name: credentials.name,
+            full_name: normalizedName,
           },
         },
       });
 
-      if (signUpError) throw signUpError;
+      console.log('[AuthStore] 🟢 SignUp API Response:', {
+        success: !signUpError,
+        userId: data?.user?.id,
+        hasSession: !!data?.session,
+        errorCode: signUpError?.status,
+        errorMessage: signUpError?.message
+      });
+
+      if (signUpError) {
+        console.error('[AuthStore] ❌ SignUp Error Details:', {
+          message: signUpError.message,
+          status: signUpError.status,
+          name: signUpError.name
+        });
+        
+        if (
+          signUpError.message.includes('already registered') ||
+          signUpError.message.includes('already exists') ||
+          signUpError.message.includes('duplicate') ||
+          signUpError.message.includes('User already registered') ||
+          signUpError.status === 422 ||
+          signUpError.status === 409
+        ) {
+          throw new Error('This email is already registered. Please sign in instead.');
+        }
+        
+        throw signUpError;
+      }
+      
+      if (!data.user) {
+        throw new Error('User creation failed - no user returned from Supabase');
+      }
 
       user.value = data.user;
       session.value = data.session;
+
+      console.log('[AuthStore] 🔄 Loading user profile...');
       
-      await loadUserProfile();
+      let profileRetries = 5;
+      while (profileRetries > 0) {
+        try {
+          await loadUserProfile();
+          console.log('[AuthStore] ✅ Profile loaded successfully');
+          break;
+        } catch (err) {
+          console.warn(`[AuthStore] Profile load attempt ${6 - profileRetries}/5 failed`);
+          profileRetries--;
+          if (profileRetries > 0) {
+            await new Promise(r => setTimeout(r, 500));
+          } else {
+            console.error('[AuthStore] ⚠️ Profile load failed after all retries');
+          }
+        }
+      }
 
       needsOnboarding.value = true;
 
-      return { 
-        success: true, 
-        data: { 
-          user: data.user, 
-          session: data.session 
-        } 
+      console.log('[AuthStore] ✅ SignUp COMPLETE:', {
+        userId: data.user.id,
+        email: data.user.email
+      });
+
+      return {
+        success: true,
+        data: { user: data.user, session: data.session },
       };
     } catch (err) {
+      console.error('[AuthStore] ❌ SignUp CATCH block:', {
+        error: err,
+        message: err instanceof Error ? err.message : 'Unknown error',
+        type: err instanceof Error ? err.constructor.name : typeof err
+      });
+      
       const errorMessage = (err as AuthError).message || 'Registration error';
       error.value = errorMessage;
       return { success: false, error: errorMessage };
     } finally {
       loading.value = false;
+      
+      setTimeout(() => {
+        isSignUpInProgress = false;
+        console.log('[AuthStore] 🔵 SignUp lock released');
+      }, 2000);
+      
+      console.log('[AuthStore] 🔵 SignUp END');
     }
   };
 
@@ -321,25 +423,29 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   const initialize = async (): Promise<void> => {
-    await getCurrentUser();
+    const { data } = await supabase.auth.getSession();
 
-    supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, currentSession: Session | null) => {
+    user.value = data.session?.user ?? null;
+    session.value = data.session;
+
+    supabase.auth.onAuthStateChange(async (event, currentSession) => {
       console.log('[Auth] State changed:', event);
 
-      user.value = currentSession?.user || null;
+      user.value = currentSession?.user ?? null;
       session.value = currentSession;
 
-      if (event === 'SIGNED_IN' && currentSession?.user) {
-        checkOnboardingStatus().catch(err => {
-          console.error('[Auth] checkOnboardingStatus failed:', err);
-        });
+      if (event === 'SIGNED_IN' && user.value) {
+        await loadUserProfile();
+        await checkOnboardingStatus();
       }
 
       if (event === 'SIGNED_OUT') {
         needsOnboarding.value = false;
+        userProfile.value = null;
       }
     });
   };
+
 
   const userCreatedAt = computed(() => user.value?.created_at ?? null);
 

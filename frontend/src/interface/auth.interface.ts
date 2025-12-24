@@ -52,5 +52,4 @@ export interface UserProfile {
   timezone: string | null;
   work_hours_start: string | null;
   work_hours_end: string | null;
-  xp: number;
 }
