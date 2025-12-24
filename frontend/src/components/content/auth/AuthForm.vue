@@ -1,8 +1,17 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+  const emit = defineEmits<{
+    submit: []
+  }>();
+
+  const handleSubmit = (event: Event) => {
+    event.preventDefault();
+    emit('submit');
+  };
+</script>
 
 <template>
-  <form class="auth-form" @submit.prevent="$emit('submit')">
-    <slot ></slot>
+  <form @submit.prevent="handleSubmit" class="auth-form">
+    <slot></slot>
   </form>
 </template>
 
