@@ -1,28 +1,39 @@
 <script setup lang="ts">
-  import { onMounted } from 'vue';
+  import { watch } from 'vue';
   import { RouterView } from 'vue-router';
   import AppContainer from '@/components/base/AppContainer.vue';
   import AppToast from '@/components/base/AppToast.vue';
+  import { useAuthStore } from '@/stores/authStore';
   import { useWorkspaceStore } from '@/stores/workspaceStore';
-  import { useTasksStore  } from '@/stores/taskStore';
+  import { useTasksStore } from '@/stores/taskStore';
   import { useProgressStore } from '@/stores/progressStore';
 
+  const authStore = useAuthStore();
   const workspaceStore = useWorkspaceStore();
-  const taskStore = useTasksStore ();
+  const taskStore = useTasksStore();
   const progressStore = useProgressStore();
 
-  onMounted(async () => {
-    try {
+  authStore.initialize();
+
+  watch(
+    () => authStore.isAuthenticated,
+    async (isAuth) => {
+      if (!isAuth) return;
+
+      console.log('[App] User authenticated, loading data...');
+
       await workspaceStore.fetchWorkspaces();
-      await taskStore.checkRecurringTasks();
-      await taskStore.fetchTasks();
-      await progressStore.fetchProgress();
-      
+
+      await Promise.allSettled([
+        taskStore.checkRecurringTasks(),
+        taskStore.fetchTasks(),
+        progressStore.fetchProgress()
+      ]);
+
       console.log('[App] Initial data loaded');
-    } catch (error) {
-      console.error('[App] Error loading initial data:', error);
-    }
-  });
+    },
+    { immediate: true }
+  );
 </script>
 
 <template>
