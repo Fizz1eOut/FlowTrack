@@ -203,24 +203,41 @@ export const useTasksStore = defineStore('tasks', () => {
   }
 
   async function updateTaskStatus(taskId: string, status: TaskStatus): Promise<void> {
+    console.log('[TasksStore] updateTaskStatus called', { taskId, status });
+  
     try {
+      await TaskService.updateStatus(taskId, status);
+      console.log('[TasksStore] Database updated successfully');
+    
       tasks.value = tasks.value.map(task => 
         task.id === taskId ? { ...task, status } : task
       );
-
-      await TaskService.updateStatus(taskId, status);
     
-      console.log(`[TasksStore] Task ${taskId} status updated to ${status}`);
+      console.log('[TasksStore] Local state updated');
     } catch (err) {
       console.error('[TasksStore] updateTaskStatus error', err);
-    
-      await fetchTasks();
+      console.error('[TasksStore] Error details:', {
+        name: err instanceof Error ? err.name : 'unknown',
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined
+      });
     
       const message = err instanceof Error ? err.message : 'Unknown error';
       error.value = message;
       throw err;
     }
   }
+
+  async function markTaskInProgress(taskId: string): Promise<void> {
+    console.log('[TasksStore] markTaskInProgress', taskId);
+
+    await TaskService.markInProgress(taskId);
+
+    tasks.value = tasks.value.map(task =>
+      task.id === taskId ? { ...task, status: 'in_progress' } : task
+    );
+  }
+
 
   return {
     tasks,
@@ -242,6 +259,7 @@ export const useTasksStore = defineStore('tasks', () => {
     unarchiveTask,
     updateActualMinutes,
     getTaskById,
-    updateTaskStatus
+    updateTaskStatus,
+    markTaskInProgress
   };
 });
