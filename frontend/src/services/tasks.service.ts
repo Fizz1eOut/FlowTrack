@@ -358,22 +358,30 @@ export class TaskService {
   }
 
   static async updateStatus(taskId: string, status: TaskStatus): Promise<void> {
-    const { data: currentTask, error: fetchError } = await supabase
+    const { error } = await supabase
+      .from('tasks')
+      .update({ status })
+      .eq('id', taskId);
+
+    if (error) throw error;
+  }
+  static async markInProgress(taskId: string): Promise<void> {
+    const { data: task, error } = await supabase
       .from('tasks')
       .select('status')
       .eq('id', taskId)
       .single();
 
-    if (fetchError) throw fetchError;
+    if (error) throw error;
+    if (!task || task.status === 'in_progress') return;
 
-    const { error } = await supabase
+    await supabase
       .from('tasks')
-      .update({ 
-        status,
-        previous_status: currentTask?.status 
+      .update({
+        status: 'in_progress',
+        previous_status: task.status
       })
       .eq('id', taskId);
-
-    if (error) throw error;
   }
+
 }
