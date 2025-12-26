@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, watch, ref } from 'vue';
+  import { computed, watch, ref, onMounted } from 'vue';
   import { useTimerStore } from '@/stores/timerStore';
   import { showToast } from '@/stores/toastStore';
   import type { TaskResponse } from '@/interface/task.interface';
@@ -38,7 +38,16 @@
     return timerStore.formattedActiveTime;
   });
 
-  function toggleTimer() {
+  function toggleTimer(event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log('[TaskTimer] toggleTimer called', {
+      isRunning: isRunningForThisTask.value,
+      taskId: props.task.id,
+      isStopping: timerStore.isStopping
+    });
+
     if (isRunningForThisTask.value) {
       stopTimer();
     } else {
@@ -46,31 +55,46 @@
     }
   }
 
-  function startTimer() {
-    if (props.disabled) return;
+  async function startTimer() {
+    console.log('[TaskTimer] startTimer called');
+    
+    if (props.disabled) {
+      console.log('[TaskTimer] Timer disabled, ignoring');
+      return;
+    }
 
     if (hasConflict.value) {
+      console.log('[TaskTimer] Has conflict, showing dialog');
       showConflictDialog.value = true;
       return;
     }
 
-    const success = timerStore.startTimer(props.task.id, props.task.title);
-    
+    const success = await timerStore.startTimer(props.task.id, props.task.title);
+  
     if (!success) {
+      console.error('[TaskTimer] Failed to start timer');
       showToast('Failed to start timer', 'error');
+      return;
     }
+
+    console.log('[TaskTimer] Timer started successfully');
     showToast('The timer has started', 'success');
   }
 
   async function stopTimer() {
+    console.log('[TaskTimer] stopTimer called', {
+      isStopping: timerStore.isStopping,
+      taskId: props.task.id
+    });
+
+    if (timerStore.isStopping) return;
+
     try {
-      const session = await timerStore.stopTimer(props.task.status);
-    
+      const session = await timerStore.stopTimer();
+
       if (session) {
         emit('timer-stopped', session.minutesSpent);
         showToast('The timer has stopped', 'success');
-      
-        await new Promise(resolve => setTimeout(resolve, 150));
       }
     } catch (error) {
       console.error('[TaskTimer] Error stopping timer:', error);
@@ -79,24 +103,33 @@
   }
 
   async function handleConflictConfirm() {
-    const currentTaskStatus = props.task.status;
-    await timerStore.stopTimer(currentTaskStatus);
-    timerStore.startTimer(props.task.id, props.task.title);
+    console.log('[TaskTimer] Conflict confirmed, switching timers');
+
+    await timerStore.stopTimer();
+    await timerStore.startTimer(props.task.id, props.task.title);
+
     showConflictDialog.value = false;
   }
 
   function handleConflictCancel() {
+    console.log('[TaskTimer] Conflict cancelled');
     showConflictDialog.value = false;
   }
 
-  watch(() => timerStore.activeTimer, (newTimer) => {
-    if (!newTimer && isRunningForThisTask.value) {
+  watch(() => timerStore.activeTimer?.taskId, (newTaskId) => {
+    if (!newTaskId && isRunningForThisTask.value) {
       console.log('[TaskTimer] Timer stopped externally');
     }
   });
 
   defineExpose({
     isRunning: isRunningForThisTask
+  });
+
+  onMounted(async () => {
+    if (props.task.id) {
+      await timerStore.fetchHistoryByTask(props.task.id);
+    }
   });
 </script>
 
@@ -106,14 +139,16 @@
       primary
       @click="toggleTimer"
       :class="['task-timer__button', { active: isRunningForThisTask }]"
-      :disabled="disabled"
+      :disabled="disabled || timerStore.isStopping"
     >
       <app-icon
         :name="isRunningForThisTask ? 'pause' : 'play'"
         size="var(--fs-xl)"
         color="var(--color-white)"
       />
-      <span class="task-timer__display">{{ formattedTime }}</span>
+      <span class="task-timer__display">
+        {{ timerStore.isStopping ? 'Stopping...' : formattedTime }}
+      </span>
     </app-button>
 
     <timer-conflict 
