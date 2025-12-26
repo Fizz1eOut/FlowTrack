@@ -16,21 +16,20 @@
   authStore.initialize();
 
   watch(
-    () => authStore.isAuthenticated,
-    async (isAuth) => {
-      if (!isAuth) return;
+    () => authStore.userId,
+    async (userId) => {
+      if (!userId) return;
 
-      console.log('[App] User authenticated, loading data...');
+      console.log('[App] User ID ready, loading data...');
 
       await workspaceStore.fetchWorkspaces();
 
       await Promise.allSettled([
-        taskStore.checkRecurringTasks(),
         taskStore.fetchTasks(),
-        progressStore.fetchProgress()
+        progressStore.fetchProgress(),
       ]);
-
-      console.log('[App] Initial data loaded');
+    
+      await taskStore.checkRecurringTasks();
     },
     { immediate: true }
   );
