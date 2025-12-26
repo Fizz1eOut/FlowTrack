@@ -1,7 +1,5 @@
 <script setup lang="ts">
   import { useTimerStore } from '@/stores/timerStore';
-  import { useTasksStore } from '@/stores/taskStore';
-  import { TaskStatusUtils } from '@/utils/taskStatus';
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
 
@@ -11,31 +9,33 @@
   }
   const emit = defineEmits<Emits>();
 
-  const taskStore = useTasksStore();
   const timerStore = useTimerStore();
 
-  async function stopActiveTimer() {
-    if (!timerStore.activeTimer) return;
+  async function stopActiveTimer(e?: Event) {
+    e?.preventDefault();
+    e?.stopPropagation();
 
-    const task = taskStore.getTaskById(timerStore.activeTimer.taskId);
+    console.log('[ActiveTimer] stopActiveTimer called', {
+      hasActiveTimer: !!timerStore.activeTimer,
+      isStopping: timerStore.isStopping,
+      taskId: timerStore.activeTimer?.taskId
+    });
 
-    if (!task) {
-      console.warn('[TaskTimer] Task not found');
-      await timerStore.stopTimer('planned');
+    if (!timerStore.activeTimer?.taskId || timerStore.isStopping) return;
+
+    try {
+      console.log('[ActiveTimer] Stopping timer...');
+      await timerStore.stopTimer();
       emit('close');
-      return;
+    } catch (error) {
+      console.error('[ActiveTimer] Error stopping timer:', error);
     }
-
-    const newStatus = task.previous_status
-      ? task.previous_status
-      : TaskStatusUtils.getPreviousStatus(task);
-
-    await timerStore.stopTimer(newStatus);
-    emit('close');
   }
+
 
   function openTask() {
     if (!timerStore.activeTimer) return;
+    console.log('[ActiveTimer] Opening task:', timerStore.activeTimer.taskId);
     emit('open-task', timerStore.activeTimer.taskId);
   }
 </script>
@@ -69,9 +69,10 @@
 
       <app-button 
         class="timer-dropdown__stop-btn"
-        @click="stopActiveTimer"
+        :disabled="timerStore.isStopping"
+        @click.stop="stopActiveTimer"
       >
-        Stop
+        {{ timerStore.isStopping ? 'Stopping...' : 'Stop' }}
       </app-button>
     </div>
   </div>
