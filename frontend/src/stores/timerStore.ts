@@ -2,9 +2,14 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { TaskStatus } from '@/interface/task.interface';
 import { useTasksStore } from '@/stores/taskStore';
-import { TimerHistoryService } from '@/services/timerHistory.service';
-import type { TimerHistoryRecord } from '@/interface/timerHistory.interface';
 import { useAuthStore } from '@/stores/authStore';
+import { TimerService } from '@/services/timer.service';
+import { supabase } from '@/utils/supabase';
+import type { 
+  TimerHistoryRecord, 
+  TimerHistoryStats,
+  CreateTimerHistoryInput 
+} from '@/interface/timerHistory.interface';
 
 interface ActiveTimer {
   taskId: string;
@@ -28,7 +33,12 @@ export const useTimerStore = defineStore('timer', () => {
   const activeTimer = ref<ActiveTimer | null>(null);
   const lastSession = ref<LastSession | null>(null);
   const intervalId = ref<number | null>(null);
-  const timerHistory = ref<TimerHistoryRecord[]>([]);
+  const isStopping = ref(false);
+
+  const history = ref<TimerHistoryRecord[]>([]);
+  const stats = ref<TimerHistoryStats | null>(null);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
 
   const hasActiveTimer = computed(() => activeTimer.value !== null);
   const activeTimerCount = computed(() => hasActiveTimer.value ? 1 : 0);
@@ -51,20 +61,23 @@ export const useTimerStore = defineStore('timer', () => {
     return `${minutes}:${String(secs).padStart(2, '0')}`;
   });
 
+  const todayHistory = computed(() => {
+    const today = new Date().toISOString().substring(0, 10);
+    return history.value.filter(r => r.started_at.startsWith(today));
+  });
+
+  const todayTotalMinutes = computed(() =>
+    todayHistory.value.reduce((sum, r) => sum + r.duration_minutes, 0)
+  );
+
   function loadFromStorage() {
     try {
       const storedTimer = localStorage.getItem(STORAGE_KEY);
       if (storedTimer) {
         const parsed: ActiveTimer = JSON.parse(storedTimer);
-        
-        const now = Date.now();
-        const elapsed = Math.floor((now - parsed.startTime) / 1000);
-        
-        activeTimer.value = {
-          ...parsed,
-          elapsedSeconds: elapsed
-        };
+        const elapsed = Math.floor((Date.now() - parsed.startTime) / 1000);
 
+        activeTimer.value = { ...parsed, elapsedSeconds: elapsed };
         startInterval();
       }
 
@@ -72,8 +85,8 @@ export const useTimerStore = defineStore('timer', () => {
       if (storedSession) {
         lastSession.value = JSON.parse(storedSession);
       }
-    } catch (error) {
-      console.error('[TimerStore] Error loading from storage:', error);
+    } catch {
+      /* ignore */
     }
   }
 
@@ -88,8 +101,8 @@ export const useTimerStore = defineStore('timer', () => {
       if (lastSession.value) {
         localStorage.setItem(LAST_SESSION_KEY, JSON.stringify(lastSession.value));
       }
-    } catch (error) {
-      console.error('[TimerStore] Error saving to storage:', error);
+    } catch {
+      /* ignore */
     }
   }
 
@@ -100,8 +113,9 @@ export const useTimerStore = defineStore('timer', () => {
 
     intervalId.value = window.setInterval(() => {
       if (activeTimer.value) {
-        const now = Date.now();
-        activeTimer.value.elapsedSeconds = Math.floor((now - activeTimer.value.startTime) / 1000);
+        activeTimer.value.elapsedSeconds = Math.floor(
+          (Date.now() - activeTimer.value.startTime) / 1000
+        );
         saveToStorage();
       }
     }, 1000);
@@ -115,13 +129,8 @@ export const useTimerStore = defineStore('timer', () => {
   }
 
   async function startTimer(taskId: string, taskTitle: string): Promise<boolean> {
-    if (activeTimer.value && activeTimer.value.taskId !== taskId) {
-      return false;
-    }
-
-    if (activeTimer.value && activeTimer.value.taskId === taskId) {
-      return true;
-    }
+    if (activeTimer.value && activeTimer.value.taskId !== taskId) return false;
+    if (activeTimer.value && activeTimer.value.taskId === taskId) return true;
 
     activeTimer.value = {
       taskId,
@@ -133,89 +142,81 @@ export const useTimerStore = defineStore('timer', () => {
     startInterval();
     saveToStorage();
 
-    const tasksStore = useTasksStore();
     try {
-      await tasksStore.updateTaskStatus(taskId, 'in_progress');
-      console.log('[TimerStore] Timer started for task:', taskTitle);
-    } catch (error) {
-      console.error('[TimerStore] Failed to update task status:', error);
+      await useTasksStore().markTaskInProgress(taskId);
+    } catch {
+      /* ignore */
     }
+
     return true;
   }
 
-  async function stopTimer(taskStatus: TaskStatus): Promise<LastSession | null> {
-    if (!activeTimer.value) return null;
+  async function stopTimer(): Promise<LastSession | null> {
+    if (!activeTimer.value || isStopping.value) return null;
+    isStopping.value = true;
 
-    stopInterval();
-  
     const timerData = { ...activeTimer.value };
-    const durationSeconds = timerData.elapsedSeconds;
-    const minutesSpent = Math.floor(durationSeconds / 60);
-
-    activeTimer.value = null;
-    saveToStorage();
-
-    const session: LastSession = {
-      taskId: timerData.taskId,
-      taskTitle: timerData.taskTitle,
-      taskStatus,
-      minutesSpent,
-      stoppedAt: new Date().toISOString()
-    };
-
-    lastSession.value = session;
-    saveToStorage();
+    const durationSeconds = Math.floor((Date.now() - timerData.startTime) / 1000);
+    const minutesSpent = Math.max(1, Math.round(durationSeconds / 60));
 
     const tasksStore = useTasksStore();
     const authStore = useAuthStore();
 
     try {
-      await tasksStore.updateTaskStatus(timerData.taskId, taskStatus);
-    
-      if (authStore.userId && durationSeconds >= 60) {
-        const task = tasksStore.getTaskById(timerData.taskId);
-      
-        let recurringTemplateId: string | null = null;
-      
-        if (task) {
-          if (task.original_task_id) {
-            recurringTemplateId = task.original_task_id;
-          } else if (task.is_recurring) {
-            recurringTemplateId = task.id;
-          }
-        }
-      
-        await TimerHistoryService.create(authStore.userId, {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        await supabase.auth.refreshSession().catch(() => {});
+      }
+
+      const task = tasksStore.getTaskById(timerData.taskId);
+      if (!task) throw new Error('Task not found');
+
+      const sessionData: LastSession = {
+        taskId: timerData.taskId,
+        taskTitle: timerData.taskTitle,
+        taskStatus: task.status,
+        minutesSpent,
+        stoppedAt: new Date().toISOString()
+      };
+
+      let recurringTemplateId: string | null = null;
+      if (task.original_task_id) recurringTemplateId = task.original_task_id;
+      else if (task.is_recurring) recurringTemplateId = task.id;
+
+      if (authStore.userId && minutesSpent > 0) {
+        const historyInput: CreateTimerHistoryInput = {
           task_id: timerData.taskId,
           task_title: timerData.taskTitle,
           started_at: new Date(timerData.startTime).toISOString(),
-          stopped_at: session.stoppedAt,
+          stopped_at: sessionData.stoppedAt,
           duration_seconds: durationSeconds,
           duration_minutes: minutesSpent,
-          final_status: taskStatus,
+          final_status: task.status,
           recurring_template_id: recurringTemplateId
-        });
-      
-        console.log('[TimerStore] Timer session saved to history');
-      
-        await loadHistory(timerData.taskId);
-      }
-    } catch (error) {
-      console.error('[TimerStore] Failed to update task status or save history:', error);
-    }
+        };
 
-    console.log('[TimerStore] Timer stopped. Session:', session);
-    return session;
+        await TimerService.createHistory(authStore.userId, historyInput)
+          .then(() => fetchHistoryByTask(timerData.taskId))
+          .catch(() => {});
+      }
+
+      stopInterval();
+      activeTimer.value = null;
+      lastSession.value = sessionData;
+      saveToStorage();
+
+      return sessionData;
+    } finally {
+      isStopping.value = false;
+    }
   }
 
   function forceStopTimer() {
     if (!activeTimer.value) return;
-
     stopInterval();
     activeTimer.value = null;
     saveToStorage();
-
-    console.log('[TimerStore] Timer force stopped');
+    isStopping.value = false;
   }
 
   function isTimerActiveForTask(taskId: string): boolean {
@@ -231,23 +232,49 @@ export const useTimerStore = defineStore('timer', () => {
     localStorage.removeItem(LAST_SESSION_KEY);
   }
 
-  async function loadHistory(taskId: string): Promise<void> {
+  async function fetchHistory(limit?: number) {
+    const userId = useAuthStore().userId;
+    if (!userId) return;
+
+    loading.value = true;
+    error.value = null;
+
     try {
-      timerHistory.value = await TimerHistoryService.fetchByTaskOrTemplate(taskId);
-      console.log('[TimerStore] Loaded timer history:', timerHistory.value.length, 'records');
-    } catch (error) {
-      console.error('[TimerStore] Failed to load timer history:', error);
-      timerHistory.value = [];
+      history.value = await TimerService.fetchAllHistory(userId, limit);
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error';
+    } finally {
+      loading.value = false;
     }
   }
 
-  async function deleteHistoryRecord(historyId: string, taskId: string): Promise<boolean> {
+  async function fetchHistoryByTask(taskId: string) {
     try {
-      await TimerHistoryService.delete(historyId);
-      await loadHistory(taskId);
+      history.value = await TimerService.fetchHistoryByTaskOrTemplate(taskId);
+    } catch {
+      history.value = [];
+    }
+  }
+
+  async function fetchStats() {
+    const userId = useAuthStore().userId;
+    if (!userId) return;
+
+    try {
+      stats.value = await TimerService.getStats(userId);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function deleteHistoryRecord(historyId: string, taskId?: string): Promise<boolean> {
+    try {
+      await TimerService.deleteHistory(historyId);
+      if (taskId) await fetchHistoryByTask(taskId);
+      else history.value = history.value.filter(r => r.id !== historyId);
       return true;
-    } catch (error) {
-      console.error('[TimerStore] Failed to delete history record:', error);
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error';
       return false;
     }
   }
@@ -257,14 +284,20 @@ export const useTimerStore = defineStore('timer', () => {
   return {
     activeTimer: computed(() => activeTimer.value),
     lastSession: computed(() => lastSession.value),
-    timerHistory: computed(() => timerHistory.value),
-    
+    isStopping: computed(() => isStopping.value),
     hasActiveTimer,
     activeTimerCount,
     hasLastSession,
     currentElapsedSeconds,
     formattedActiveTime,
-    
+
+    history: computed(() => history.value),
+    stats: computed(() => stats.value),
+    loading: computed(() => loading.value),
+    error: computed(() => error.value),
+    todayHistory,
+    todayTotalMinutes,
+
     startTimer,
     stopTimer,
     forceStopTimer,
@@ -272,7 +305,10 @@ export const useTimerStore = defineStore('timer', () => {
     getActiveTimerTaskId,
     clearLastSession,
     loadFromStorage,
-    loadHistory,
+
+    fetchHistory,
+    fetchHistoryByTask,
+    fetchStats,
     deleteHistoryRecord
   };
 });
