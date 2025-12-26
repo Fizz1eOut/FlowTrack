@@ -1,9 +1,20 @@
 import { supabase } from '@/utils/supabase';
-import type { TimerHistoryRecord, CreateTimerHistoryInput, TimerHistoryStats } from '@/interface/timerHistory.interface';
+import type { 
+  TimerHistoryRecord, 
+  CreateTimerHistoryInput, 
+  TimerHistoryStats 
+} from '@/interface/timerHistory.interface';
 
-export class TimerHistoryService {
-  static async create(userId: string, input: CreateTimerHistoryInput): Promise<TimerHistoryRecord> {
-    const { data, error } = await supabase
+export class TimerService {
+  static async createHistory(
+    userId: string,
+    input: CreateTimerHistoryInput
+  ): Promise<TimerHistoryRecord> {
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timeout')), 10000)
+    );
+
+    const request = supabase
       .from('timer_history')
       .insert({
         user_id: userId,
@@ -12,11 +23,23 @@ export class TimerHistoryService {
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await Promise.race([request, timeout]) as any;
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (err) {
+      throw err;
+    }
   }
 
-  static async fetchAll(userId: string, limit?: number): Promise<TimerHistoryRecord[]> {
+  static async fetchAllHistory(
+    userId: string, 
+    limit?: number
+  ): Promise<TimerHistoryRecord[]> {
     let query = supabase
       .from('timer_history')
       .select('*')
@@ -33,7 +56,7 @@ export class TimerHistoryService {
     return data ?? [];
   }
 
-  static async fetchByTask(taskId: string): Promise<TimerHistoryRecord[]> {
+  static async fetchHistoryByTask(taskId: string): Promise<TimerHistoryRecord[]> {
     const { data, error } = await supabase
       .from('timer_history')
       .select('*')
@@ -44,7 +67,7 @@ export class TimerHistoryService {
     return data ?? [];
   }
 
-  static async fetchByTaskOrTemplate(taskId: string): Promise<TimerHistoryRecord[]> {
+  static async fetchHistoryByTaskOrTemplate(taskId: string): Promise<TimerHistoryRecord[]> {
     const { data: task } = await supabase
       .from('tasks')
       .select('original_task_id, is_recurring')
@@ -86,7 +109,7 @@ export class TimerHistoryService {
     return data ?? [];
   }
 
-  static async fetchByDateRange(
+  static async fetchHistoryByDateRange(
     userId: string, 
     startDate: string, 
     endDate: string
@@ -121,17 +144,18 @@ export class TimerHistoryService {
       };
     }
 
-    const totalMinutes = data.reduce((sum, record) => sum + record.duration_minutes, 0);
+    const totalMinutes = data.reduce((sum, r) => sum + r.duration_minutes, 0);
     const longestSession = Math.max(...data.map(r => r.duration_minutes));
 
     const dayMap = new Map<string, number>();
-    data.forEach(record => {
-      const day = record.started_at.split('T')[0];
-      dayMap.set(day, (dayMap.get(day) || 0) + record.duration_minutes);
+    data.forEach(r => {
+      const day = r.started_at.split('T')[0];
+      dayMap.set(day, (dayMap.get(day) || 0) + r.duration_minutes);
     });
 
     let mostProductiveDay: string | null = null;
     let maxMinutes = 0;
+
     dayMap.forEach((minutes, day) => {
       if (minutes > maxMinutes) {
         maxMinutes = minutes;
@@ -148,7 +172,7 @@ export class TimerHistoryService {
     };
   }
 
-  static async delete(historyId: string): Promise<void> {
+  static async deleteHistory(historyId: string): Promise<void> {
     const { error } = await supabase
       .from('timer_history')
       .delete()
@@ -157,7 +181,7 @@ export class TimerHistoryService {
     if (error) throw error;
   }
 
-  static async deleteByTask(taskId: string): Promise<void> {
+  static async deleteHistoryByTask(taskId: string): Promise<void> {
     const { error } = await supabase
       .from('timer_history')
       .delete()
