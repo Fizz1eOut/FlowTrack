@@ -11,7 +11,7 @@
   const props = defineProps<TaskDetailTimerHistoryProps>();
 
   const timerStore = useTimerStore();
-  const history = computed(() => timerStore.timerHistory);
+  const history = computed(() => timerStore.history);
 
   const totalMinutes = computed(() => {
     return history.value.reduce((sum, r) => sum + r.duration_minutes, 0);
@@ -49,23 +49,26 @@
     return `${mins}m`;  
   }
 
-  const sessionsLabel = computed(() => {
-    const count = history.value.length;
-
-    if (count === 1) return 'Session';
-    if (count >= 2 && count <= 4) return 'Sessions';
-    return 'Sessions';
-  });
+  const sessionsLabel = computed(() => 
+    history.value.length === 1 ? 'Session' : 'Sessions'
+  );
 
   watch(() => timerStore.lastSession, async (newSession) => {
     if (newSession && newSession.taskId === props.task.id) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      await timerStore.loadHistory(props.task.id);
+      console.log('[TaskDetailTimerHistory] Detected new session, refreshing history');
+      
+      // Даем небольшую задержку для завершения записи
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await timerStore.fetchHistoryByTask(props.task.id);
+      console.log('[TaskDetailTimerHistory] History refreshed, records:', history.value.length);
     }
   }, { deep: true });
 
-  onMounted(() => {
-    timerStore.loadHistory(props.task.id);
+  onMounted(async () => {
+    if (props.task.id) {
+      await timerStore.fetchHistoryByTask(props.task.id);
+    }
   });
 </script>
 
