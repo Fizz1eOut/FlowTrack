@@ -8,6 +8,7 @@
   interface TaskDetailsModalProips {
     isOpen: boolean;
     task: TaskResponse;
+    isCompleted: boolean;
   }
   const props = defineProps<TaskDetailsModalProips>();
 
@@ -31,6 +32,7 @@
 
 <template>
   <app-modal 
+    v-if="!isCompleted"
     v-model="modalValue" 
     :scrollable="true"
   >

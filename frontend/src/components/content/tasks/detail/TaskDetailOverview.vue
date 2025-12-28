@@ -58,7 +58,6 @@
         <app-input
           v-model="dueDate"
           :disabled="true"
-          :class="{ 'is-running': isTimerActive }"
           class="field__input"
         />
       </div>
@@ -68,7 +67,6 @@
         <app-input
           v-model="estimateMinutes"
           :disabled="true"
-          :class="{ 'is-running': isTimerActive }"
           class="field__input"
         />
       </div>

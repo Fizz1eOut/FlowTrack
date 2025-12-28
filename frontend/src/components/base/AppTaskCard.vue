@@ -39,6 +39,7 @@
       :is-open="isOpen" 
       :task="task"
       @close="closeModal"
+      :isCompleted="isCompleted"
     />
   </div>
 </template>

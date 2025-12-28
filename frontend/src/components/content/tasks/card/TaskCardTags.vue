@@ -6,8 +6,12 @@
 
   interface TaskCardTagsProps {
     task: TaskResponse;
+    scrollable?: boolean;
   }
-  const props = defineProps<TaskCardTagsProps>();
+  const props = withDefaults(defineProps<TaskCardTagsProps>(), {
+    scrollable: false
+  });
+
 
   const priorityInfo = computed(() => {
     return TASK_PRIORITIES[props.task.priority] || TASK_PRIORITIES.medium;
@@ -16,7 +20,7 @@
 
 <template>
   <div class="task-card-tags">
-    <div class="task-card-tags__group">
+    <div class="task-card-tags__group" :class="{ 'task-card-tags__group--scroll': scrollable }">
       <div class="task-card-tags__meta">
         <div 
           class="task-card-tags__badge"
@@ -30,8 +34,8 @@
       </div>
 
       <div v-if="task.tags && task.tags.length > 0" class="task-card-tags__tags">
-        <ul v-for="tag in task.tags" :key="tag" class="tags__list">
-          <li class="tag__item"># {{ tag }}</li>
+        <ul class="tags__list">
+          <li v-for="tag in task.tags" :key="tag" class="tag__item"># {{ tag }}</li>
         </ul>
       </div>
     </div>
@@ -52,7 +56,7 @@
     font-size: var(--fs-md);
     font-weight: var(--fw-medium);
   }
-  .task-card-tags__tags {
+  .tags__list {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -62,7 +66,20 @@
     padding: 6px 10px;
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
+    flex-shrink: 0; 
+    width: max-content;
+    white-space: nowrap;   
   }
+  .task-card-tags__group--scroll {
+    overflow-x: auto;
+    max-width: 430px;
+  }
+  .task-card-tags__group--scroll .tag__item {
+    flex-shrink: 0; 
+    width: max-content;
+    white-space: nowrap; 
+  }
+
   @media (max-width: 500px) {
     .task-card-tags__group,
     .task-card-tags__tags {

@@ -18,7 +18,7 @@
       class="task-detail-header__status"
     />
 
-    <task-card-tags :task="task" />
+    <task-card-tags :task="task" scrollable />
   </div>
 </template>
 

@@ -71,7 +71,7 @@ export const useTasksStore = defineStore('tasks', () => {
 
     try {
       const task = await TaskService.create(userId, input);
-      await fetchTasks();
+      tasks.value.push(task);
       return task;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
@@ -84,7 +84,7 @@ export const useTasksStore = defineStore('tasks', () => {
   async function updateTask(taskId: string, input: UpdateTaskInput): Promise<TaskResponse | null> {
     try {
       const task = await TaskService.update(taskId, input);
-      await fetchTasks();
+      tasks.value = tasks.value.map(t => t.id === taskId ? task : t);
       return task;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
@@ -142,15 +142,27 @@ export const useTasksStore = defineStore('tasks', () => {
     taskId: string, 
     currentStatus: TaskStatus
   ): Promise<{ xpEarned: number; leveledUp: boolean; newLevel: number }> {
+    const previousTask = tasks.value.find(t => t.id === taskId);
+    const newStatus: TaskStatus = currentStatus === 'done' ? 'backlog' : 'done';
+    
+    tasks.value = tasks.value.map(task =>
+      task.id === taskId ? { ...task, status: newStatus } : task
+    );
+
     try {
       const result = await TaskService.toggleTaskCompletion(taskId, currentStatus);
-      await fetchTasks();
 
       const progressStore = useProgressStore();
-      await progressStore.fetchProgress();
+      progressStore.fetchProgress();
   
       return result;
     } catch (err: unknown) {
+      if (previousTask) {
+        tasks.value = tasks.value.map(task =>
+          task.id === taskId ? previousTask : task
+        );
+      }
+      
       const message = err instanceof Error ? err.message : 'Unknown error';
       error.value = message;
       console.error('[TasksStore] Toggle completion error:', err);
@@ -159,11 +171,22 @@ export const useTasksStore = defineStore('tasks', () => {
   }
 
   async function archiveTask(taskId: string): Promise<boolean> {
+    const previousTask = tasks.value.find(t => t.id === taskId);
+    
+    tasks.value = tasks.value.map(task =>
+      task.id === taskId ? { ...task, status: 'archived' as TaskStatus } : task
+    );
+
     try {
       await TaskService.archiveTask(taskId);
-      await fetchTasks();
       return true;
     } catch (err: unknown) {
+      if (previousTask) {
+        tasks.value = tasks.value.map(task =>
+          task.id === taskId ? previousTask : task
+        );
+      }
+      
       const message = err instanceof Error ? err.message : 'Unknown error';
       error.value = message;
       console.error('[TasksStore] Archive error:', err);
@@ -172,11 +195,22 @@ export const useTasksStore = defineStore('tasks', () => {
   }
 
   async function unarchiveTask(taskId: string): Promise<boolean> {
+    const previousTask = tasks.value.find(t => t.id === taskId);
+    
+    tasks.value = tasks.value.map(task =>
+      task.id === taskId ? { ...task, status: 'backlog' as TaskStatus } : task
+    );
+
     try {
       await TaskService.unarchiveTask(taskId);
-      await fetchTasks();
       return true;
     } catch (err: unknown) {
+      if (previousTask) {
+        tasks.value = tasks.value.map(task =>
+          task.id === taskId ? previousTask : task
+        );
+      }
+      
       const message = err instanceof Error ? err.message : 'Unknown error';
       error.value = message;
       console.error('[TasksStore] Unarchive error:', err);
@@ -204,17 +238,24 @@ export const useTasksStore = defineStore('tasks', () => {
 
   async function updateTaskStatus(taskId: string, status: TaskStatus): Promise<void> {
     console.log('[TasksStore] updateTaskStatus called', { taskId, status });
+    
+    const previousTask = tasks.value.find(t => t.id === taskId);
+    
+    tasks.value = tasks.value.map(task => 
+      task.id === taskId ? { ...task, status } : task
+    );
   
     try {
       await TaskService.updateStatus(taskId, status);
       console.log('[TasksStore] Database updated successfully');
-    
-      tasks.value = tasks.value.map(task => 
-        task.id === taskId ? { ...task, status } : task
-      );
-    
       console.log('[TasksStore] Local state updated');
     } catch (err) {
+      if (previousTask) {
+        tasks.value = tasks.value.map(task =>
+          task.id === taskId ? previousTask : task
+        );
+      }
+      
       console.error('[TasksStore] updateTaskStatus error', err);
       console.error('[TasksStore] Error details:', {
         name: err instanceof Error ? err.name : 'unknown',
@@ -230,14 +271,24 @@ export const useTasksStore = defineStore('tasks', () => {
 
   async function markTaskInProgress(taskId: string): Promise<void> {
     console.log('[TasksStore] markTaskInProgress', taskId);
-
-    await TaskService.markInProgress(taskId);
+    
+    const previousTask = tasks.value.find(t => t.id === taskId);
 
     tasks.value = tasks.value.map(task =>
-      task.id === taskId ? { ...task, status: 'in_progress' } : task
+      task.id === taskId ? { ...task, status: 'in_progress' as TaskStatus } : task
     );
-  }
 
+    try {
+      await TaskService.markInProgress(taskId);
+    } catch (err) {
+      if (previousTask) {
+        tasks.value = tasks.value.map(task =>
+          task.id === taskId ? previousTask : task
+        );
+      }
+      throw err;
+    }
+  }
 
   return {
     tasks,

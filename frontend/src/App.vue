@@ -7,11 +7,13 @@
   import { useWorkspaceStore } from '@/stores/workspaceStore';
   import { useTasksStore } from '@/stores/taskStore';
   import { useProgressStore } from '@/stores/progressStore';
+  import { useTimerStore } from '@/stores/timerStore';
 
   const authStore = useAuthStore();
   const workspaceStore = useWorkspaceStore();
   const taskStore = useTasksStore();
   const progressStore = useProgressStore();
+  const timerStore = useTimerStore();
 
   authStore.initialize();
 
@@ -20,16 +22,15 @@
     async (userId) => {
       if (!userId) return;
 
-      console.log('[App] User ID ready, loading data...');
-
       await workspaceStore.fetchWorkspaces();
 
       await Promise.allSettled([
         taskStore.fetchTasks(),
         progressStore.fetchProgress(),
+        taskStore.checkRecurringTasks(),
       ]);
-    
-      await taskStore.checkRecurringTasks();
+  
+      timerStore.loadFromStorage();
     },
     { immediate: true }
   );
