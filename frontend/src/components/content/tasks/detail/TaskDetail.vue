@@ -64,9 +64,12 @@
     }
   });
 
-  onMounted(() => {
+  onMounted(async () => {
     if (props.task.actual_minutes) {
       currentActualMinutes.value = props.task.actual_minutes;
+    }
+    if (props.task.id) {
+      await timerStore.fetchHistoryByTask(props.task.id);
     }
   });
 

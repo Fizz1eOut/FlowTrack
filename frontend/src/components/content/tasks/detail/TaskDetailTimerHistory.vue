@@ -57,7 +57,6 @@
     if (newSession && newSession.taskId === props.task.id) {
       console.log('[TaskDetailTimerHistory] Detected new session, refreshing history');
       
-      // Даем небольшую задержку для завершения записи
       await new Promise(resolve => setTimeout(resolve, 500));
       
       await timerStore.fetchHistoryByTask(props.task.id);
