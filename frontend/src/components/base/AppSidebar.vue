@@ -4,6 +4,7 @@
   import AppButton from '@/components/base/AppButton.vue';
   import AppContainer from '@/components/base/AppContainer.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
+  import WorkspaceCreateModal from '@/components/content/workspace/WorkspaceCreateModal.vue';
 
   interface AppSidebarProps {
     isOpen?: boolean;
@@ -32,9 +33,7 @@
           <app-nav @menu-click="emit('close')" :is-open="isOpen" />
         </div>
 
-        <app-button v-if="isOpen" secondary>
-          Create Workspace
-        </app-button>
+        <workspace-create-modal v-if="isOpen" />
       </div>
     </app-container>
   </div>
