@@ -14,6 +14,8 @@
 
   const props = defineProps<{
     modelValue: WorkspaceForm
+    isValid: boolean
+    error: string | null
   }>();
 
   const emit = defineEmits<{
@@ -31,7 +33,12 @@
     <div class="workspace-form__body">
       <div class="workspace-form__field">
         <div class="workspace-form__label">Workspace name</div>
-        <app-input v-model="form.name" placeholder="Enter workspace name" />
+        <app-input 
+          v-model="form.name"
+          placeholder="Enter workspace name"
+          :class="{ error: !isValid }"
+        />
+        <div v-if="!isValid" class="name-error">{{ error }}</div>
       </div>
 
       <div class="workspace-form__field">
@@ -63,5 +70,12 @@
     font-size: var(--fs-sm);
     font-weight: var(--fw-normal);
     margin-bottom: var(--space-xs);
+  }
+  .error {
+    border: 1px solid var(--error);
+    border-radius: var(--radius-sm);
+  }
+  .name-error {
+    color: var(--error);
   }
 </style>
