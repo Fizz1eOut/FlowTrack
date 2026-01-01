@@ -114,19 +114,6 @@ export const useWorkspaceStore = defineStore('workspaces', () => {
 
       if (workspaceError) throw workspaceError;
 
-      const { error: memberError } = await supabase
-        .from('workspace_members')
-        .insert({
-          workspace_id: workspace.id,
-          user_id: user.id,
-          role: 'owner',
-          invited_by: null
-        });
-
-      if (memberError) {
-        await supabase.from('workspaces').delete().eq('id', workspace.id);
-        throw memberError;
-      }
     
       workspaces.value.push(workspace);
       setCurrentWorkspace(workspace.id);
