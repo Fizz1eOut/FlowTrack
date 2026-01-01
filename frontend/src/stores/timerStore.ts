@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { TaskStatus } from '@/interface/task.interface';
 import { useTasksStore } from '@/stores/taskStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -15,7 +15,6 @@ interface ActiveTimer {
   taskId: string;
   taskTitle: string;
   startTime: number;
-  elapsedSeconds: number;
 }
 
 interface LastSession {
@@ -32,13 +31,16 @@ const LAST_SESSION_KEY = 'app_last_timer_session';
 export const useTimerStore = defineStore('timer', () => {
   const activeTimer = ref<ActiveTimer | null>(null);
   const lastSession = ref<LastSession | null>(null);
-  const intervalId = ref<number | null>(null);
   const isStopping = ref(false);
+  const tickTrigger = ref(0);
 
   const history = ref<TimerHistoryRecord[]>([]);
   const stats = ref<TimerHistoryStats | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
+
+  let rafId: number | null = null;
+  let lastUpdateTime = 0;
 
   const hasActiveTimer = computed(() => activeTimer.value !== null);
   const activeTimerCount = computed(() => hasActiveTimer.value ? 1 : 0);
@@ -46,7 +48,7 @@ export const useTimerStore = defineStore('timer', () => {
 
   const currentElapsedSeconds = computed(() => {
     if (!activeTimer.value) return 0;
-    return activeTimer.value.elapsedSeconds;
+    return Math.floor((Date.now() - activeTimer.value.startTime) / 1000) + tickTrigger.value * 0;
   });
 
   const formattedActiveTime = computed(() => {
@@ -74,11 +76,7 @@ export const useTimerStore = defineStore('timer', () => {
     try {
       const storedTimer = localStorage.getItem(STORAGE_KEY);
       if (storedTimer) {
-        const parsed: ActiveTimer = JSON.parse(storedTimer);
-        const elapsed = Math.floor((Date.now() - parsed.startTime) / 1000);
-
-        activeTimer.value = { ...parsed, elapsedSeconds: elapsed };
-        startInterval();
+        activeTimer.value = JSON.parse(storedTimer);
       }
 
       const storedSession = localStorage.getItem(LAST_SESSION_KEY);
@@ -86,7 +84,6 @@ export const useTimerStore = defineStore('timer', () => {
         lastSession.value = JSON.parse(storedSession);
       }
     } catch {
-      /* ignore */
     }
   }
 
@@ -97,36 +94,76 @@ export const useTimerStore = defineStore('timer', () => {
       } else {
         localStorage.removeItem(STORAGE_KEY);
       }
+    } catch {
+    }
+  }
 
+  function saveLastSessionToStorage() {
+    try {
       if (lastSession.value) {
         localStorage.setItem(LAST_SESSION_KEY, JSON.stringify(lastSession.value));
+      } else {
+        localStorage.removeItem(LAST_SESSION_KEY);
       }
     } catch {
-      /* ignore */
     }
   }
 
-  function startInterval() {
-    if (intervalId.value !== null) {
-      clearInterval(intervalId.value);
-    }
+  function startUIUpdate() {
+    if (rafId !== null) return;
 
-    intervalId.value = window.setInterval(() => {
-      if (activeTimer.value) {
-        activeTimer.value.elapsedSeconds = Math.floor(
-          (Date.now() - activeTimer.value.startTime) / 1000
-        );
-        saveToStorage();
+    const update = (timestamp: number) => {
+      if (!activeTimer.value) {
+        stopUIUpdate();
+        return;
       }
-    }, 1000);
+
+      if (timestamp - lastUpdateTime >= 1000) {
+        tickTrigger.value++;
+        lastUpdateTime = timestamp;
+      }
+
+      rafId = requestAnimationFrame(update);
+    };
+
+    rafId = requestAnimationFrame(update);
   }
 
-  function stopInterval() {
-    if (intervalId.value !== null) {
-      clearInterval(intervalId.value);
-      intervalId.value = null;
+  function stopUIUpdate() {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+      lastUpdateTime = 0;
     }
   }
+
+  watch(
+    () => activeTimer.value,
+    (newVal) => {
+      if (newVal) {
+        startUIUpdate();
+      } else {
+        stopUIUpdate();
+      }
+    },
+    { immediate: true }
+  );
+
+  watch(
+    () => activeTimer.value,
+    () => {
+      saveToStorage();
+    },
+    { deep: true }
+  );
+
+  watch(
+    () => lastSession.value,
+    () => {
+      saveLastSessionToStorage();
+    },
+    { deep: true }
+  );
 
   async function startTimer(taskId: string, taskTitle: string): Promise<boolean> {
     if (activeTimer.value && activeTimer.value.taskId !== taskId) return false;
@@ -135,17 +172,12 @@ export const useTimerStore = defineStore('timer', () => {
     activeTimer.value = {
       taskId,
       taskTitle,
-      startTime: Date.now(),
-      elapsedSeconds: 0
+      startTime: Date.now()
     };
-
-    startInterval();
-    saveToStorage();
 
     try {
       await useTasksStore().markTaskInProgress(taskId);
     } catch {
-      /* ignore */
     }
 
     return true;
@@ -200,10 +232,8 @@ export const useTimerStore = defineStore('timer', () => {
           .catch(() => {});
       }
 
-      stopInterval();
       activeTimer.value = null;
       lastSession.value = sessionData;
-      saveToStorage();
 
       return sessionData;
     } finally {
@@ -213,9 +243,7 @@ export const useTimerStore = defineStore('timer', () => {
 
   function forceStopTimer() {
     if (!activeTimer.value) return;
-    stopInterval();
     activeTimer.value = null;
-    saveToStorage();
     isStopping.value = false;
   }
 
@@ -229,7 +257,6 @@ export const useTimerStore = defineStore('timer', () => {
 
   function clearLastSession() {
     lastSession.value = null;
-    localStorage.removeItem(LAST_SESSION_KEY);
   }
 
   async function fetchHistory(limit?: number) {
@@ -263,7 +290,6 @@ export const useTimerStore = defineStore('timer', () => {
     try {
       stats.value = await TimerService.getStats(userId);
     } catch {
-      /* ignore */
     }
   }
 
