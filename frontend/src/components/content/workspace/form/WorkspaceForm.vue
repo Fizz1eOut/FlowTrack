@@ -82,18 +82,16 @@
   <div class="workspace-form">
     <workspace-form-header @close="handleClose" />
 
-    <div v-if="error" class="workspace-form__error">
-      {{ error }}
-    </div>
-
     <workspace-form-fields 
       v-model="form"
+      :is-valid="isValid"
+      :error="error"
       :can-create-personal="workspaceStore.canCreatePersonalWorkspace"
     />
 
     <workspace-form-actions
       :loading="loading"
-      :disabled="!isValid"
+      :is-valid="isValid"
       @cancel="handleClose"
       @submit="handleSubmit"
     />
@@ -101,19 +99,9 @@
 </template>
 
 <style scoped>
-.workspace-form {
-  background: var(--color-white);
-  border-radius: var(--radius-md);
-  padding: var(--space-lg);
-}
-
 .workspace-form__error {
   margin-top: var(--space-md);
-  padding: var(--space-sm) var(--space-md);
-  background: var(--color-error-light);
-  border: 1px solid var(--color-error);
-  border-radius: var(--radius-sm);
-  color: var(--color-error-dark);
+  color: var(--error);
   font-size: var(--fs-sm);
 }
 </style>
