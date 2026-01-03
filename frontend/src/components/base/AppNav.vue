@@ -2,6 +2,7 @@
   import { useRoute, useRouter } from 'vue-router';
   import AppIcon from '@/components/base/AppIcon.vue';
   import AppButton from '@/components/base/AppButton.vue';
+  import WorkspaceSwitcher from '@/components/content/workspace/WorkspaceSwitcher.vue';
 
   interface AppNavProps {
     isOpen?: boolean;
@@ -37,6 +38,8 @@
 <template>
   <div class="wrapper">
     <nav class="nav">
+      <workspace-switcher v-if="isOpen" />
+      
       <app-button
         v-for="item in menuItems"
         :key="item.path"
