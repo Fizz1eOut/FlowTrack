@@ -28,61 +28,62 @@ export const useWorkspaceStore = defineStore('workspaces', () => {
   async function fetchWorkspaces(): Promise<WorkspaceResponse[]> {
     loading.value = true;
     error.value = null;
-    
+
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-      if (authError || !user) {
-        console.warn('[WorkspaceStore] User not ready yet, skip fetchWorkspaces');
-        return [];
-      }
+      if (authError || !user) return [];
 
       const { data, error: dbError } = await supabase
         .from('workspace_members')
         .select(`
-          workspace_id,
-          role,
-          workspaces:workspace_id (
-            id,
-            name,
-            type,
-            owner_id,
-            description,
-            color,
-            created_at
-          )
-        `)
+        workspace_id,
+        role,
+        workspaces:workspace_id (
+          id,
+          name,
+          type,
+          owner_id,
+          description,
+          color,
+          created_at
+        )
+      `)
         .eq('user_id', user.id)
         .order('joined_at', { ascending: true });
 
       if (dbError) throw dbError;
-      
-      const workspacesData = data
-        ?.map(item => item.workspaces)
-        .filter(Boolean)
-        .flat() as WorkspaceResponse[];
 
-      workspaces.value = workspacesData ?? [];
-      
-      if (!currentWorkspaceId.value && workspacesData && workspacesData.length > 0) {
-        const personal = workspacesData.find(w => w.type === 'personal');
-        const targetWorkspace = personal ?? workspacesData[0];
-  
-        if (targetWorkspace) {
-          currentWorkspaceId.value = targetWorkspace.id;
-          localStorage.setItem('currentWorkspaceId', targetWorkspace.id);
-        }
-      }
-      
-      return workspacesData ?? [];
-    } catch (e: unknown) {
-      const err = e instanceof Error ? e.message : String(e);
-      error.value = err;
+      workspaces.value = (data?.map(i => i.workspaces).filter(Boolean).flat() as WorkspaceResponse[]) ?? [];
+
+      restoreCurrentWorkspace();
+      return workspaces.value;
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e);
       throw e;
     } finally {
       loading.value = false;
     }
   }
+
+  function restoreCurrentWorkspace(): void {
+    const savedId = localStorage.getItem('currentWorkspaceId');
+
+    if (savedId && workspaces.value.some(w => w.id === savedId)) {
+      currentWorkspaceId.value = savedId;
+      return;
+    }
+
+    const personal = workspaces.value.find(w => w.type === 'personal');
+    const fallback = personal ?? workspaces.value[0];
+
+    if (fallback) {
+      setCurrentWorkspace(fallback.id);
+    } else {
+      currentWorkspaceId.value = null;
+      localStorage.removeItem('currentWorkspaceId');
+    }
+  }
+
 
   const canCreatePersonalWorkspace = computed((): boolean => {
     return !workspaces.value.some(w => w.type === 'personal');
@@ -261,13 +262,6 @@ async function fetchWorkspacesWithStats(): Promise<WorkspaceResponse[]> {
   return workspacesWithStats;
 }
 
-function initializeCurrentWorkspace(): void {
-  const saved = localStorage.getItem('currentWorkspaceId');
-  if (saved) {
-    currentWorkspaceId.value = saved;
-  }
-}
-
 function clearWorkspaces(): void {
   workspaces.value = [];
   currentWorkspaceId.value = null;
@@ -292,7 +286,7 @@ return {
   setCurrentWorkspace,
   getWorkspaceWithStats,
   fetchWorkspacesWithStats,
-  initializeCurrentWorkspace,
+  restoreCurrentWorkspace,
   clearWorkspaces
 };
 });
