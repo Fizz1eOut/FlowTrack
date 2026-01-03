@@ -1,16 +1,18 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import type { TaskResponse, CreateTaskInput, UpdateTaskInput, TaskStatus } from '@/interface/task.interface';
 import { TaskService } from '@/services/tasks.service';
 import { RecurringTaskService } from '@/services/recurring.service';
 import { useProgressStore } from '@/stores/progressStore';
+import { useWorkspaceStore } from '@/stores/workspaceStore';
 
 export const useTasksStore = defineStore('tasks', () => {
   const authStore = useAuthStore();
   const tasks = ref<TaskResponse[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const workspaceStore = useWorkspaceStore();
 
   const todayTasks = computed(() => {
     const today = new Date();
@@ -40,8 +42,10 @@ export const useTasksStore = defineStore('tasks', () => {
 
   async function fetchTasks(): Promise<TaskResponse[]> {
     const userId = authStore.userId;
-    if (!userId) {
-      console.warn('[TasksStore] User not authenticated');
+    const workspaceId = workspaceStore.currentWorkspaceId;
+
+    if (!userId || !workspaceId) {
+      tasks.value = [];
       return [];
     }
 
@@ -49,18 +53,31 @@ export const useTasksStore = defineStore('tasks', () => {
     error.value = null;
 
     try {
-      const data = await TaskService.fetchAll(userId);
+      const data = await TaskService.fetchAll(userId, workspaceId);
       tasks.value = data;
       return data;
-    } catch (err: unknown) {
+    } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       error.value = message;
-      console.error('[TasksStore] Fetch error:', err);
       return [];
     } finally {
       loading.value = false;
     }
   }
+
+  watch(
+    () => workspaceStore.currentWorkspaceId,
+    async (workspaceId) => {
+      if (!workspaceId) {
+        tasks.value = [];
+        return;
+      }
+
+      await fetchTasks();
+    },
+    { immediate: true }
+  );
+
 
   async function createTask(input: CreateTaskInput): Promise<TaskResponse | null> {
     const userId = authStore.userId;
