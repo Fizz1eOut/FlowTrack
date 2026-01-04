@@ -3,6 +3,7 @@
   import { useWorkspaceStore } from '@/stores/workspaceStore';
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
+  import WorkspaceInviteButton from '@/components/content/workspace/invite/WorkspaceInviteButton.vue';
 
   const workspaceStore = useWorkspaceStore();
 
@@ -63,6 +64,8 @@
           color="var(--color-white)"
         />
       </app-button>
+
+      <workspace-invite-button class="workspace-switcher__invite" />
     </div>
   </div>
 </template>
@@ -85,6 +88,9 @@
     justify-content: space-between;
     gap: 10px;
     border-radius: var(--radius-sm);
+  }
+  .workspace-switcher__invite {
+    margin-top: var(--space-xs);
   }
   .workspace-switcher__color {
     display: inline-block;
