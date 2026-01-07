@@ -1,17 +1,22 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, readonly } from 'vue';
 import type { 
   WorkspaceResponse, 
   CreateWorkspaceInput, 
-  UpdateWorkspaceInput 
+  UpdateWorkspaceInput,
+  WorkspaceInvitation,
+  InviteMemberInput,
+  WorkspaceMember, 
 } from '@/interface/workspace.interface';
-import { supabase } from '@/utils/supabase';
+import { WorkspaceService } from '@/services/workspace.service';
 
 export const useWorkspaceStore = defineStore('workspaces', () => {
   const workspaces = ref<WorkspaceResponse[]>([]);
   const currentWorkspaceId = ref<string | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const invitations = ref<Record<string, WorkspaceInvitation[]>>({});
+  const members = ref<Record<string, WorkspaceMember[]>>({});
 
   const currentWorkspace = computed((): WorkspaceResponse | null => {
     return workspaces.value.find(w => w.id === currentWorkspaceId.value) || null;
@@ -24,39 +29,38 @@ export const useWorkspaceStore = defineStore('workspaces', () => {
   const teamWorkspaces = computed((): WorkspaceResponse[] => {
     return workspaces.value.filter(w => w.type === 'team');
   });
+
+  const canCreatePersonalWorkspace = computed((): boolean => {
+    return !workspaces.value.some(w => w.type === 'personal');
+  });
+  
+  const currentWorkspaceInvitations = computed((): WorkspaceInvitation[] => {
+    if (!currentWorkspaceId.value) return [];
+    return invitations.value[currentWorkspaceId.value] || [];
+  });
+
+  const currentWorkspaceMembers = computed((): WorkspaceMember[] => {
+    if (!currentWorkspaceId.value) return [];
+    return members.value[currentWorkspaceId.value] || [];
+  });
+
+  const pendingInvitations = computed((): WorkspaceInvitation[] => {
+    return currentWorkspaceInvitations.value.filter(inv => {
+      const notAccepted = !inv.accepted_at;
+      const notExpired = new Date(inv.expires_at) > new Date();
+      return notAccepted && notExpired;
+    });
+  });
   
   async function fetchWorkspaces(): Promise<WorkspaceResponse[]> {
     loading.value = true;
     error.value = null;
 
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) return [];
-
-      const { data, error: dbError } = await supabase
-        .from('workspace_members')
-        .select(`
-        workspace_id,
-        role,
-        workspaces:workspace_id (
-          id,
-          name,
-          type,
-          owner_id,
-          description,
-          color,
-          created_at
-        )
-      `)
-        .eq('user_id', user.id)
-        .order('joined_at', { ascending: true });
-
-      if (dbError) throw dbError;
-
-      workspaces.value = (data?.map(i => i.workspaces).filter(Boolean).flat() as WorkspaceResponse[]) ?? [];
-
+      const data = await WorkspaceService.fetchUserWorkspaces();
+      workspaces.value = data;
       restoreCurrentWorkspace();
-      return workspaces.value;
+      return data;
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e);
       throw e;
@@ -84,41 +88,19 @@ export const useWorkspaceStore = defineStore('workspaces', () => {
     }
   }
 
-
-  const canCreatePersonalWorkspace = computed((): boolean => {
-    return !workspaces.value.some(w => w.type === 'personal');
-  });
-
   async function createWorkspace(input: CreateWorkspaceInput): Promise<WorkspaceResponse> {
     loading.value = true;
     error.value = null;
   
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('The user is not authorized');
-
       if (input.type === 'personal' && !canCreatePersonalWorkspace.value) {
         throw new Error('Personal workspace already exists');
       }
 
-      const { data: workspace, error: workspaceError } = await supabase
-        .from('workspaces')
-        .insert({
-          name: input.name,
-          type: input.type || 'team',
-          description: input.description || null,
-          color: input.color || '#3b82f6',
-          owner_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (workspaceError) throw workspaceError;
-
-    
+      const workspace = await WorkspaceService.createWorkspace(input);
       workspaces.value.push(workspace);
       setCurrentWorkspace(workspace.id);
-    
+      
       return workspace;
     } catch (e: unknown) {
       const err = e instanceof Error ? e.message : String(e);
@@ -129,164 +111,253 @@ export const useWorkspaceStore = defineStore('workspaces', () => {
     }
   }
 
-type WorkspaceUpdateData = Partial<Pick<WorkspaceResponse, 'name' | 'type' | 'description' | 'color'>>;
+  async function updateWorkspace(
+    workspaceId: string, 
+    input: UpdateWorkspaceInput
+  ): Promise<WorkspaceResponse> {
+    loading.value = true;
+    error.value = null;
 
-async function updateWorkspace(
-  workspaceId: string, 
-  input: UpdateWorkspaceInput
-): Promise<WorkspaceResponse> {
-  loading.value = true;
-  error.value = null;
+    try {
+      const data = await WorkspaceService.updateWorkspace(workspaceId, input);
 
-  try {
-    const updateData: WorkspaceUpdateData = {};
-  
-    if (input.name !== undefined) updateData.name = input.name;
-    if (input.type !== undefined) updateData.type = input.type;
-    if (input.description !== undefined) updateData.description = input.description;
-    if (input.color !== undefined) updateData.color = input.color;
-
-    const { data, error: dbError } = await supabase
-      .from('workspaces')
-      .update(updateData)
-      .eq('id', workspaceId)
-      .select()
-      .single();
-
-    if (dbError) throw dbError;
-
-    const index = workspaces.value.findIndex(w => w.id === workspaceId);
-    if (index !== -1) {
-      workspaces.value[index] = data;
-    }
-  
-    return data;
-  } catch (e: unknown) {
-    const err = e instanceof Error ? e.message : String(e);
-    error.value = err;
-    throw e;
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function deleteWorkspace(workspaceId: string): Promise<void> {
-  loading.value = true;
-  error.value = null;
-    
-  try {
-    const workspace = workspaces.value.find(w => w.id === workspaceId);
-    if (workspace?.type === 'personal') {
-      throw new Error('You can`t delete your personal workspace.');
-    }
-
-    const { error: dbError } = await supabase
-      .from('workspaces')
-      .delete()
-      .eq('id', workspaceId);
-
-    if (dbError) throw dbError;
-
-    workspaces.value = workspaces.value.filter(w => w.id !== workspaceId);
-      
-    if (currentWorkspaceId.value === workspaceId) {
-      const personalWs = personalWorkspace.value;
-
-      if (personalWs) {
-        setCurrentWorkspace(personalWs.id);
-      } else if (workspaces.value.length > 0) {
-        const first = workspaces.value[0];
-        if (first) setCurrentWorkspace(first.id);
-      } else {
-        currentWorkspaceId.value = null;
+      const index = workspaces.value.findIndex(w => w.id === workspaceId);
+      if (index !== -1) {
+        workspaces.value[index] = data;
       }
+    
+      return data;
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e.message : String(e);
+      error.value = err;
+      throw e;
+    } finally {
+      loading.value = false;
     }
-  } catch (e: unknown) {
-    const err = e instanceof Error ? e.message : String(e);
-    error.value = err;
-    throw e;
-  } finally {
-    loading.value = false;
   }
-}
 
-function setCurrentWorkspace(workspaceId: string): void {
-  const workspace = workspaces.value.find(w => w.id === workspaceId);
-  if (workspace) {
-    currentWorkspaceId.value = workspaceId;
-    localStorage.setItem('currentWorkspaceId', workspaceId);
+  async function deleteWorkspace(workspaceId: string): Promise<void> {
+    loading.value = true;
+    error.value = null;
+      
+    try {
+      const workspace = workspaces.value.find(w => w.id === workspaceId);
+      if (workspace?.type === 'personal') {
+        throw new Error('You can`t delete your personal workspace.');
+      }
+
+      await WorkspaceService.deleteWorkspace(workspaceId);
+      workspaces.value = workspaces.value.filter(w => w.id !== workspaceId);
+        
+      if (currentWorkspaceId.value === workspaceId) {
+        const personalWs = personalWorkspace.value;
+
+        if (personalWs) {
+          setCurrentWorkspace(personalWs.id);
+        } else if (workspaces.value.length > 0) {
+          const first = workspaces.value[0];
+          if (first) setCurrentWorkspace(first.id);
+        } else {
+          currentWorkspaceId.value = null;
+        }
+      }
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e.message : String(e);
+      error.value = err;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
   }
-}
 
-async function getWorkspaceWithStats(workspaceId: string): Promise<WorkspaceResponse> {
-  loading.value = true;
-  error.value = null;
-    
-  try {
+  function setCurrentWorkspace(workspaceId: string): void {
     const workspace = workspaces.value.find(w => w.id === workspaceId);
-    if (!workspace) throw new Error('Workspace not found');
-
-    const { count: totalTasks } = await supabase
-      .from('tasks')
-      .select('*', { count: 'exact', head: true })
-      .eq('workspace_id', workspaceId);
-
-    const { count: completedTasks } = await supabase
-      .from('tasks')
-      .select('*', { count: 'exact', head: true })
-      .eq('workspace_id', workspaceId)
-      .eq('status', 'done');
-
-    return {
-      ...workspace,
-      tasks_count: totalTasks ?? 0,
-      completed_tasks: completedTasks ?? 0
-    };
-  } catch (e: unknown) {
-    const err = e instanceof Error ? e.message : String(e);
-    error.value = err;
-    throw e;
-  } finally {
-    loading.value = false;
+    if (workspace) {
+      currentWorkspaceId.value = workspaceId;
+      localStorage.setItem('currentWorkspaceId', workspaceId);
+    }
   }
-}
 
-async function fetchWorkspacesWithStats(): Promise<WorkspaceResponse[]> {
-  await fetchWorkspaces();
-    
-  const workspacesWithStats = await Promise.all(
-    workspaces.value.map(ws => getWorkspaceWithStats(ws.id))
-  );
-    
-  workspaces.value = workspacesWithStats;
-  return workspacesWithStats;
-}
+  async function getWorkspaceWithStats(workspaceId: string): Promise<WorkspaceResponse> {
+    loading.value = true;
+    error.value = null;
+      
+    try {
+      const workspace = workspaces.value.find(w => w.id === workspaceId);
+      if (!workspace) throw new Error('Workspace not found');
 
-function clearWorkspaces(): void {
-  workspaces.value = [];
-  currentWorkspaceId.value = null;
-  localStorage.removeItem('currentWorkspaceId');
-}
+      const stats = await WorkspaceService.getWorkspaceStats(workspaceId);
 
-return {
-  workspaces,
-  currentWorkspaceId,
-  loading,
-  error,
+      return {
+        ...workspace,
+        ...stats,
+      };
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e.message : String(e);
+      error.value = err;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function fetchWorkspacesWithStats(): Promise<WorkspaceResponse[]> {
+    await fetchWorkspaces();
+      
+    const workspacesWithStats = await Promise.all(
+      workspaces.value.map(ws => getWorkspaceWithStats(ws.id))
+    );
+      
+    workspaces.value = workspacesWithStats;
+    return workspacesWithStats;
+  }
+
+  function clearWorkspaces(): void {
+    workspaces.value = [];
+    currentWorkspaceId.value = null;
+    invitations.value = {};
+    members.value = {};
+    localStorage.removeItem('currentWorkspaceId');
+  }
+
+  async function fetchInvitations(workspaceId: string): Promise<WorkspaceInvitation[]> {
+    loading.value = true;
+    error.value = null;
     
-  currentWorkspace,
-  personalWorkspace,
-  teamWorkspaces,
-  canCreatePersonalWorkspace,
+    try {
+      const data = await WorkspaceService.fetchInvitations(workspaceId);
+      invitations.value[workspaceId] = data;
+      return data;
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e.message : String(e);
+      error.value = err;
+      console.error('[WorkspaceStore] fetchInvitations error:', err);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function inviteMember(input: InviteMemberInput): Promise<WorkspaceInvitation> {
+    loading.value = true;
+    error.value = null;
+  
+    try {
+      const workspace = workspaces.value.find(w => w.id === input.workspace_id);
+      if (!workspace) throw new Error('Workspace not found');
+
+      const isOwner = await WorkspaceService.checkOwnership(input.workspace_id);
+      if (!isOwner) {
+        throw new Error('Only workspace owner can invite members');
+      }
+
+      const hasInvite = await WorkspaceService.hasActiveInvitation(
+        input.workspace_id,
+        input.email
+      );
+
+      if (hasInvite) {
+        throw new Error('User is already invited');
+      }
+
+
+      const data = await WorkspaceService.inviteMember(input);
+
+      const workspaceId = input.workspace_id;
+      if (!invitations.value[workspaceId]) {
+        invitations.value[workspaceId] = [];
+      }
+      invitations.value[workspaceId].unshift(data);
+
+      console.log('[WorkspaceStore] Invitation created:', {
+        id: data.id,
+        email: data.email,
+        token: data.token,
+        workspace: workspace.name
+      });
+
+      return data;
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e.message : String(e);
+      error.value = err;
+      console.error('[WorkspaceStore] inviteMember error:', err);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function cancelInvitation(invitationId: string): Promise<void> {
+    loading.value = true;
+    error.value = null;
     
-  fetchWorkspaces,
-  createWorkspace,
-  updateWorkspace,
-  deleteWorkspace,
-  setCurrentWorkspace,
-  getWorkspaceWithStats,
-  fetchWorkspacesWithStats,
-  restoreCurrentWorkspace,
-  clearWorkspaces
-};
+    try {
+      await WorkspaceService.cancelInvitation(invitationId);
+
+      for (const workspaceId in invitations.value) {
+        if (invitations.value[workspaceId]) {
+          invitations.value[workspaceId] = invitations.value[workspaceId]
+            .filter(inv => inv.id !== invitationId);
+        }
+      }
+
+      console.log('[WorkspaceStore] Invitation cancelled:', invitationId);
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e.message : String(e);
+      error.value = err;
+      console.error('[WorkspaceStore] cancelInvitation error:', err);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function fetchMembers(workspaceId: string): Promise<WorkspaceMember[]> {
+    loading.value = true;
+    error.value = null;
+    
+    try {
+      const data = await WorkspaceService.fetchMembers(workspaceId);
+      members.value[workspaceId] = data;
+      return data;
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e.message : String(e);
+      error.value = err;
+      console.error('[WorkspaceStore] fetchMembers error:', err);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  return {
+    workspaces: readonly(workspaces),
+    currentWorkspaceId: readonly(currentWorkspaceId),
+    loading: readonly(loading),
+    error: readonly(error),
+    invitations: readonly(invitations),
+    members: readonly(members),
+    
+    currentWorkspace,
+    personalWorkspace,
+    teamWorkspaces,
+    canCreatePersonalWorkspace,
+    currentWorkspaceInvitations,
+    currentWorkspaceMembers,
+    pendingInvitations,
+    
+    fetchWorkspaces,
+    createWorkspace,
+    updateWorkspace,
+    deleteWorkspace,
+    setCurrentWorkspace,
+    getWorkspaceWithStats,
+    fetchWorkspacesWithStats,
+    restoreCurrentWorkspace,
+    clearWorkspaces,
+    fetchInvitations,
+    inviteMember,
+    cancelInvitation,
+    fetchMembers,
+  };
 });
