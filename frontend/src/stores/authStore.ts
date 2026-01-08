@@ -422,30 +422,20 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  const initialize = async (): Promise<void> => {
+  const initialized = ref(false);
+  const initialize = async () => {
     const { data } = await supabase.auth.getSession();
 
     user.value = data.session?.user ?? null;
     session.value = data.session;
 
-    supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log('[Auth] State changed:', event);
-
+    supabase.auth.onAuthStateChange((event, currentSession) => {
       user.value = currentSession?.user ?? null;
       session.value = currentSession;
-
-      if (event === 'SIGNED_IN' && user.value) {
-        await loadUserProfile();
-        await checkOnboardingStatus();
-      }
-
-      if (event === 'SIGNED_OUT') {
-        needsOnboarding.value = false;
-        userProfile.value = null;
-      }
     });
-  };
 
+    initialized.value = true;
+  };
 
   const userCreatedAt = computed(() => user.value?.created_at ?? null);
 

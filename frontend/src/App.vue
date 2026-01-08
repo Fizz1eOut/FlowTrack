@@ -15,8 +15,6 @@
   const progressStore = useProgressStore();
   const timerStore = useTimerStore();
 
-  authStore.initialize();
-
   watch(
     () => authStore.userId,
     async (userId) => {

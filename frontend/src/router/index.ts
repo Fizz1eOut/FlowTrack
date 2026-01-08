@@ -54,10 +54,6 @@ router.beforeEach(async (to, from, next) => {
 
   document.title = (to.meta.title as string) || 'FlowTrack';
 
-  if (!authStore.user && !authStore.loading) {
-    await authStore.initialize();
-  }
-
   const isAuthenticated = authStore.isAuthenticated;
   const requiresAuth = to.meta.requiresAuth;
   const guestOnly = to.meta.guestOnly;
