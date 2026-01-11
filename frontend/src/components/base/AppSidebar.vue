@@ -41,8 +41,18 @@
 
 <style scoped>  
   .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
     border-right: 1px solid var(--border);
+    width: 64px; 
     height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: width 0.3s ease-in-out;
+
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
   }
   .sidebar__container {
     height: 100%;
@@ -55,6 +65,21 @@
   }
   .sidebar__btn {
     display: none;
+  }
+
+  .sidebar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sidebar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s ease-in-out;
+  }
+  .sidebar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.45);
   }
 
   @media (max-width: 768px) {

@@ -43,20 +43,21 @@
   }
   .dashboard-layout__content {
     width: 100%;
+    padding-left: 64px;
+    transition: padding-left 0.25s ease;
   }
+  .sidebar--open ~ .dashboard-layout__content {
+    padding-left: 240px;
+  }
+  
   @media (max-width: 768px) {
-    .sidebar--open {
-      max-width: 160px;
+    .sidebar--open ~ .dashboard-layout__content {
+      padding-left: 160px;
     }
   }
   @media (max-width: 480px) {
-    .sidebar--open {
-      position: absolute;
-      top: 0;
-      left: 10px;
-      z-index: 10;
-      max-width: 180px;
-      background-color: var(--surface);
+    .dashboard-layout__content {
+      padding-left: 0;
     }
   }
 </style>
