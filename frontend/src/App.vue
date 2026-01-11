@@ -3,6 +3,7 @@
   import { RouterView } from 'vue-router';
   import AppContainer from '@/components/base/AppContainer.vue';
   import AppToast from '@/components/base/AppToast.vue';
+  import TaskCreateModal from '@/components/content/tasks/TaskCreateModal.vue';
   import { useAuthStore } from '@/stores/authStore';
   import { useWorkspaceStore } from '@/stores/workspaceStore';
   import { useTasksStore } from '@/stores/taskStore';
@@ -41,6 +42,7 @@
       <app-toast />
     </app-container>
   </main>
+  <task-create-modal variant="fab" />
 </template>
 
 <style scoped>
