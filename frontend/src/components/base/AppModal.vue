@@ -31,7 +31,10 @@
             <app-underlay>
               <app-container size="xl" class="modal-container">
 
-                <div class="content__body" :class="['content', contentClass, { scrollable }]">
+                <div
+                  class="content__body modal-scroll"
+                  :class="['content', contentClass, { scrollable }]"
+                >
                   <slot ></slot>
                 </div>
               </app-container>
@@ -67,16 +70,27 @@
     max-height: calc(100vh - 80px);
     overflow-y: auto;
   }
-  .your-scroll-container::-webkit-scrollbar-track {
+
+  .modal-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+  }
+  :deep(.modal-scroll::-webkit-scrollbar) {
+    width: 6px;
+  }
+  :deep(.modal-scroll::-webkit-scrollbar-track) {
     background: transparent;
   }
-  .your-scroll-container::-webkit-scrollbar-thumb {
-    background-color: var(--color-gray);
+  :deep(.modal-scroll::-webkit-scrollbar-thumb) {
+    background-color: rgba(0, 0, 0, 0.25);
     border-radius: var(--radius-sm);
+    transition: background-color 0.2s ease-in-out;
   }
-  .your-scroll-container::-webkit-scrollbar-thumb:hover {
-    background-color: var(--color-black);
+  :deep(.modal-scroll::-webkit-scrollbar-thumb:hover) {
+    background-color: rgba(0, 0, 0, 0.45);
   }
+
+
   @media (max-width: 499px) {
     .modal-container {
       padding: 10px;
