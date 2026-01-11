@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, computed } from 'vue';
+  import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
   import { useTimerStore } from '@/stores/timerStore';
   import TimerDropdown from '@/components/content/timer/TimerDropdown.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
@@ -7,6 +7,7 @@
 
   const timerStore = useTimerStore();
   const isDropdownOpen = ref(false);
+  const timerBadgeRef = ref<HTMLElement | null>(null);
 
   const badgeCount = computed(() => {
     return timerStore.activeTimerCount;
@@ -26,14 +27,22 @@
 
   function handleClickOutside(event: MouseEvent) {
     const target = event.target as HTMLElement;
-    if (!target.closest('.timer-badge')) {
+    if (timerBadgeRef.value && !timerBadgeRef.value.contains(target)) {
       closeDropdown();
     }
   }
+
+  onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+  });
+
+  onBeforeUnmount(() => {
+    document.removeEventListener('click', handleClickOutside);
+  });
 </script>
 
 <template>
-  <div class="timer-badge" v-click-outside="handleClickOutside">
+  <div class="timer-badge" ref="timerBadgeRef">
     <app-button 
       class="timer-badge__button"
       :class="{ 
