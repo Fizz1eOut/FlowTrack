@@ -2,8 +2,8 @@
   import { computed } from 'vue';
   import AppInput from '@/components/inputs/AppInput.vue';
   import AppTextarea from '@/components/inputs/AppTextarea.vue';
-  import WorkspaceTypeSelector from '@/components/content/workspace/WorkspaceTypeSelector.vue';
-  import WorkspaceColorPicker from '@/components/content/workspace/WorkspaceColorPicker.vue';
+  import WorkspaceTypeSelector from '@/components/content/workspace/invite/WorkspaceTypeSelector.vue';
+  import WorkspaceColorPicker from '@/components/content/workspace/form/WorkspaceColorPicker.vue';
 
   type WorkspaceForm = {
     name: string
