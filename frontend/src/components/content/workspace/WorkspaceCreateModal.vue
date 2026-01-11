@@ -15,7 +15,7 @@
 </script>
 
 <template>
-  <app-button secondary @click="openModal">
+  <app-button secondary @click="openModal" class="workspace-btn">
     Create Workspace
   </app-button>
 
@@ -29,5 +29,7 @@
 </template>
 
 <style scoped>
-
+ .workspace-btn {
+  min-height: var(--space-2xl);
+ }
 </style>

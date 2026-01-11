@@ -109,5 +109,8 @@
       min-width: 30px;
       min-height: 30px;
     }
+    .header {
+      padding: 0 0px 10px 0px;
+    }
   }
 </style>

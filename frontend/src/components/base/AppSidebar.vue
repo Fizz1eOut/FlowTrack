@@ -47,9 +47,11 @@
     border-right: 1px solid var(--border);
     width: 64px; 
     height: 100vh;
+    z-index: 1;
     overflow-y: auto;
     overflow-x: hidden;
     transition: width 0.3s ease-in-out;
+    background-color: var(--surface);
 
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
@@ -64,6 +66,13 @@
     height: 100%;
   }
   .sidebar__btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 40px;
+    height: 40px;
+    background-color: var(--accent);
+    border-radius: var(--radius-sm);
     display: none;
   }
 
@@ -84,29 +93,24 @@
 
   @media (max-width: 768px) {
     .sidebar__row {
-      padding-top: 10px;
-    }
-    .sidebar__container {
-      padding: 0;
-    }
-  }
-  @media (max-width: 480px) {
-    .sidebar__row {
-      padding-top: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 10px;
     }
     .sidebar__btn {
-      margin-right: 10px;
+      display: block;
+    }
+  }
+  @media (max-width: 480px) {
+    .sidebar__row {
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
-      max-width: 30px;
-      height: 30px;
-      background-color: var(--accent);
-      border-radius: var(--radius-sm);
+      gap: 10px;
+    }
+    .sidebar {
+      width: 0;
     }
   }
 </style>
