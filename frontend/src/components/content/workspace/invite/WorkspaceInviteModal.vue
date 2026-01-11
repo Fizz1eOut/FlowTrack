@@ -6,6 +6,7 @@
   import AppInput from '@/components/inputs/AppInput.vue';
   import WorkspaceInviteRole from '@/components/content/workspace/invite/WorkspaceInviteRole.vue';
   import WorkspaceInviteActions from '@/components/content/workspace/invite/WorkspaceInviteActions.vue';
+  import AppIcon from '@/components/base/AppIcon.vue';
 
   const emit = defineEmits<{
     (e: 'close'): void
@@ -63,8 +64,14 @@
     <div class="invite-modal__body">
       <div v-if="currentWorkspace" class="invite-modal__info info-workspace">
         <div class="info-workspace__content">
-          <div class="info-workspace__name info-workspace__text">Current workspace name: <span>{{ currentWorkspace.name }}</span></div>
-          <div class="info-workspace__type info-workspace__text">Type workspace: <span>Team workspace</span></div>
+          <div class="info-workspace__text">
+            <app-icon 
+              name="team"
+              size="var(--fs-md)"
+              color="var(--color-gray)"
+            />
+            Team: <span>{{ currentWorkspace.name }}</span>
+          </div>
         </div>
       </div>
 
@@ -108,6 +115,9 @@
     margin-top: var(--space-md);
   }
   .info-workspace__text {
+    display: flex;
+    align-items: center;
+    gap: 6px;  
     font-size: var(--fs-md);
     color: var(--color-gray);
   }
@@ -121,11 +131,6 @@
   }
   .form-workspace__item:not(:last-child) {
     margin-bottom: var(--space-md)
-  }
-  .form-workspace__name {
-    margin-bottom: var(--space-xs);
-    font-size: var(--fs-md);
-    color: var(--color-black);
   }
   .error--text {
     color: var(--error);
