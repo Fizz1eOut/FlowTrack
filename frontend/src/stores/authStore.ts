@@ -59,7 +59,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   const signUp = async (credentials: RegisterCredentials): Promise<CustomAuthResponse> => {
     if (isSignUpInProgress) {
-      console.warn('[AuthStore] ⚠️ SignUp already in progress - BLOCKING duplicate call');
       return { 
         success: false, 
         error: 'Registration is already in progress. Please wait.' 
@@ -67,7 +66,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (loading.value) {
-      console.warn('[AuthStore] ⚠️ Loading state active - BLOCKING duplicate call');
       return { 
         success: false, 
         error: 'Another operation is in progress' 
@@ -82,12 +80,6 @@ export const useAuthStore = defineStore('auth', () => {
       const normalizedEmail = credentials.email.trim().toLowerCase();
       const normalizedName = credentials.name.trim();
 
-      console.log('[AuthStore] 🔵 SignUp START:', {
-        email: normalizedEmail,
-        timestamp: new Date().toISOString(),
-        callStack: new Error().stack?.split('\n').slice(1, 4).join('\n')
-      });
-
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: normalizedEmail,
         password: credentials.password,
@@ -98,35 +90,21 @@ export const useAuthStore = defineStore('auth', () => {
         },
       });
 
-      console.log('[AuthStore] 🟢 SignUp API Response:', {
-        success: !signUpError,
-        userId: data?.user?.id,
-        hasSession: !!data?.session,
-        errorCode: signUpError?.status,
-        errorMessage: signUpError?.message
-      });
-
       if (signUpError) {
-        console.error('[AuthStore] ❌ SignUp Error Details:', {
-          message: signUpError.message,
-          status: signUpError.status,
-          name: signUpError.name
-        });
-        
         if (
           signUpError.message.includes('already registered') ||
-          signUpError.message.includes('already exists') ||
-          signUpError.message.includes('duplicate') ||
-          signUpError.message.includes('User already registered') ||
-          signUpError.status === 422 ||
-          signUpError.status === 409
+        signUpError.message.includes('already exists') ||
+        signUpError.message.includes('duplicate') ||
+        signUpError.message.includes('User already registered') ||
+        signUpError.status === 422 ||
+        signUpError.status === 409
         ) {
           throw new Error('This email is already registered. Please sign in instead.');
         }
-        
+      
         throw signUpError;
       }
-      
+    
       if (!data.user) {
         throw new Error('User creation failed - no user returned from Supabase');
       }
@@ -134,58 +112,48 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = data.user;
       session.value = data.session;
 
-      console.log('[AuthStore] 🔄 Loading user profile...');
-      
       let profileRetries = 5;
       while (profileRetries > 0) {
         try {
           await loadUserProfile();
-          console.log('[AuthStore] ✅ Profile loaded successfully');
           break;
         } catch (err) {
-          console.warn(`[AuthStore] Profile load attempt ${6 - profileRetries}/5 failed`);
           profileRetries--;
           if (profileRetries > 0) {
             await new Promise(r => setTimeout(r, 500));
           } else {
-            console.error('[AuthStore] ⚠️ Profile load failed after all retries');
+            console.error('[AuthStore] Profile load failed after retries');
           }
         }
       }
 
       needsOnboarding.value = true;
 
-      console.log('[AuthStore] ✅ SignUp COMPLETE:', {
-        userId: data.user.id,
-        email: data.user.email
-      });
+      const pendingInvitation = localStorage.getItem('pendingInvitation');
+      if (pendingInvitation) {
+        localStorage.removeItem('pendingInvitation');
+        setTimeout(() => {
+          window.location.href = `/#/invite/${pendingInvitation}`;
+        }, 100);
+      }
 
       return {
         success: true,
         data: { user: data.user, session: data.session },
       };
     } catch (err) {
-      console.error('[AuthStore] ❌ SignUp CATCH block:', {
-        error: err,
-        message: err instanceof Error ? err.message : 'Unknown error',
-        type: err instanceof Error ? err.constructor.name : typeof err
-      });
-      
       const errorMessage = (err as AuthError).message || 'Registration error';
       error.value = errorMessage;
       return { success: false, error: errorMessage };
     } finally {
       loading.value = false;
-      
+    
       setTimeout(() => {
         isSignUpInProgress = false;
-        console.log('[AuthStore] 🔵 SignUp lock released');
       }, 2000);
-      
-      console.log('[AuthStore] 🔵 SignUp END');
     }
   };
-
+  
   const signIn = async (credentials: LoginCredentials): Promise<CustomAuthResponse> => {
     try {
       loading.value = true;
@@ -203,6 +171,15 @@ export const useAuthStore = defineStore('auth', () => {
 
       await loadUserProfile();
       await checkOnboardingStatus();
+
+      const pendingInvitation = localStorage.getItem('pendingInvitation');
+      if (pendingInvitation) {
+        localStorage.removeItem('pendingInvitation');
+
+        setTimeout(() => {
+          window.location.href = `/#/invite/${pendingInvitation}`;
+        }, 100);
+      }
 
       return { 
         success: true, 
