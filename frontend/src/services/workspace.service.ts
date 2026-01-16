@@ -216,4 +216,70 @@ export class WorkspaceService {
     if (error) throw error;
     return data === true;
   }
+
+  static async acceptInvitation(token: string): Promise<{
+    workspaceId: string;
+    workspaceName: string;
+  }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data: invitation, error: fetchError } = await supabase
+      .from('workspace_invitations')
+      .select(`
+      *,
+      workspace:workspace_id (
+        id,
+        name
+      )
+    `)
+      .eq('token', token)
+      .single();
+
+    if (fetchError || !invitation) {
+      throw new Error('Invitation not found');
+    }
+
+    if (new Date(invitation.expires_at) < new Date()) {
+      throw new Error('This invitation has expired');
+    }
+
+    if (invitation.accepted_at) {
+      throw new Error('This invitation has already been accepted');
+    }
+
+    if (user.email?.toLowerCase() !== invitation.email.toLowerCase()) {
+      throw new Error('This invitation is for a different email address');
+    }
+
+    const { error: memberError } = await supabase
+      .from('workspace_members')
+      .insert({
+        workspace_id: invitation.workspace_id,
+        user_id: user.id,
+        role: invitation.role,
+        invited_by: invitation.invited_by,
+      });
+
+    if (memberError) {
+      if (memberError.code === '23505') {
+        throw new Error('You are already a member of this workspace');
+      }
+      throw memberError;
+    }
+
+    const { error: updateError } = await supabase
+      .from('workspace_invitations')
+      .update({ accepted_at: new Date().toISOString() })
+      .eq('id', invitation.id);
+
+    if (updateError) {
+      console.warn('Failed to update invitation status:', updateError);
+    }
+
+    return {
+      workspaceId: invitation.workspace_id,
+      workspaceName: invitation.workspace?.name || 'Unknown Workspace',
+    };
+  }
 }
