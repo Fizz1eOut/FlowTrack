@@ -7,7 +7,7 @@ import type {
 } from '@/interface/workspace.interface';
 import { WorkspaceMembersService } from '@/services/workspaceAccessStore.service';
 
-export const useWorkspaceAccessStore = defineStore('workspaceMembers', () => {
+export const useWorkspaceAccessStore = defineStore('workspaceAccess', () => {
   const invitations = ref<Record<string, WorkspaceInvitation[]>>({});
   const members = ref<Record<string, WorkspaceMember[]>>({});
   const loading = ref(false);
@@ -26,7 +26,6 @@ export const useWorkspaceAccessStore = defineStore('workspaceMembers', () => {
       return notAccepted && notExpired;
     });
   };
-
 
   async function fetchInvitations(workspaceId: string) {
     loading.value = true;
@@ -50,9 +49,20 @@ export const useWorkspaceAccessStore = defineStore('workspaceMembers', () => {
   }
 
   async function cancelInvitation(invitationId: string, workspaceId: string) {
+    console.log('cancelInvitation', invitationId);
+
     await WorkspaceMembersService.cancelInvitation(invitationId);
-    await fetchInvitations(workspaceId);
+
+    console.log('before', invitations.value[workspaceId]);
+
+    invitations.value[workspaceId] =
+    (invitations.value[workspaceId] || []).filter(
+      inv => inv.id !== invitationId
+    );
+
+    console.log('after', invitations.value[workspaceId]);
   }
+
 
   async function fetchMembers(workspaceId: string) {
     members.value[workspaceId] =

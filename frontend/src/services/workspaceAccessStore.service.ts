@@ -42,10 +42,13 @@ export class WorkspaceMembersService {
   }
 
   static async cancelInvitation(invitationId: string): Promise<void> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('workspace_invitations')
       .delete()
-      .eq('id', invitationId);
+      .eq('id', invitationId)
+      .select();
+
+    console.log('deleted rows:', data);
 
     if (error) throw error;
   }
