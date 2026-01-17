@@ -11,6 +11,7 @@ import ForgotPasswordView from '@/views/ForgotPasswordView.vue';
 import ResetPasswordView from '@/views/ResetPasswordView.vue';
 
 import TodayView from '@/views/dashboard/TodayView.vue';
+import TeamView from '@/views/dashboard/TeamView.vue';
 
 const scrollBehavior: RouterScrollBehavior = (to, from, savedPosition) => {
   if (savedPosition) {
@@ -36,6 +37,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: '', redirect: '/dashboard/today' },
       { path: 'today', name: 'today', component: TodayView, meta: { title: 'Today' } },
+      { path: 'team', name: 'team', component: TeamView, meta: { title: 'Team' } },
     ],
   },
   
