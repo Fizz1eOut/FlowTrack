@@ -15,30 +15,38 @@ export class WorkspaceService {
       throw new Error('User not authenticated');
     }
 
-    const { data, error: dbError } = await supabase
+    console.log('[WorkspaceService] Fetching workspaces for user:', user.id);
+
+    const { data: members, error: membersError } = await supabase
       .from('workspace_members')
-      .select(`
-        workspace_id,
-        role,
-        workspaces:workspace_id (
-          id,
-          name,
-          type,
-          owner_id,
-          description,
-          color,
-          created_at
-        )
-      `)
-      .eq('user_id', user.id)
-      .order('joined_at', { ascending: true });
+      .select('workspace_id, role')
+      .eq('user_id', user.id);
 
-    if (dbError) throw dbError;
+    if (membersError) {
+      console.error('[WorkspaceService] Error fetching members:', membersError);
+      throw membersError;
+    }
 
-    const workspaces = data
-      ?.map(item => item.workspaces)
-      .filter(Boolean)
-      .flat() as WorkspaceResponse[];
+    if (!members || members.length === 0) {
+      console.log('[WorkspaceService] No workspace memberships found');
+      return [];
+    }
+
+    console.log('[WorkspaceService] Found memberships:', members);
+
+    const workspaceIds = members.map(m => m.workspace_id);
+  
+    const { data: workspaces, error: wsError } = await supabase
+      .from('workspaces')
+      .select('id, name, type, owner_id, description, color, created_at')
+      .in('id', workspaceIds);
+
+    if (wsError) {
+      console.error('[WorkspaceService] Error fetching workspaces:', wsError);
+      throw wsError;
+    }
+
+    console.log('[WorkspaceService] Found workspaces:', workspaces);
 
     return workspaces ?? [];
   }
