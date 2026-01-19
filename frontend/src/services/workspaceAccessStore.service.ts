@@ -76,41 +76,81 @@ export class WorkspaceMembersService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { data: invitation, error } = await supabase
+    console.log('[Service] Accepting invitation, token:', token);
+
+    // Шаг 1: Получаем приглашение
+    const { data: invitation, error: invError } = await supabase
       .from('workspace_invitations')
-      .select('*, workspace:workspace_id (id, name)')
+      .select('*')
       .eq('token', token)
-      .single();
+      .maybeSingle();
 
-    if (error || !invitation) throw new Error('Invitation not found');
+    if (invError) {
+      console.error('[Service] Error fetching invitation:', invError);
+      throw new Error(`Database error: ${invError.message}`);
+    }
 
+    if (!invitation) {
+      throw new Error('Invitation not found');
+    }
+
+    console.log('[Service] Invitation found:', invitation);
+
+    // Шаг 2: Проверки
     if (new Date(invitation.expires_at) < new Date()) {
-      throw new Error('Invitation expired');
+      throw new Error('This invitation has expired');
     }
 
     if (invitation.accepted_at) {
-      throw new Error('Invitation already accepted');
+      throw new Error('This invitation has already been accepted');
     }
 
     if (user.email?.toLowerCase() !== invitation.email.toLowerCase()) {
-      throw new Error('Wrong email');
+      throw new Error('This invitation is for a different email address');
     }
 
-    await supabase.from('workspace_members').insert({
-      workspace_id: invitation.workspace_id,
-      user_id: user.id,
-      role: invitation.role,
-      invited_by: invitation.invited_by,
-    });
+    console.log('[Service] Adding to workspace_members...');
+  
+    const { error: memberError } = await supabase
+      .from('workspace_members')
+      .insert({
+        workspace_id: invitation.workspace_id,
+        user_id: user.id,
+        role: invitation.role,
+        invited_by: invitation.invited_by,
+      });
+
+    if (memberError) {
+      console.error('[Service] Error adding member:', memberError);
+    
+      if (memberError.code === '23505') {
+        throw new Error('You are already a member of this workspace');
+      }
+      throw new Error(`Failed to add member: ${memberError.message}`);
+    }
+
+    console.log('[Service] Member added successfully');
+
+    const { data: workspace, error: wsError } = await supabase
+      .from('workspaces')
+      .select('id, name')
+      .eq('id', invitation.workspace_id)
+      .single();
+
+    if (wsError) {
+      console.warn('[Service] Could not fetch workspace name:', wsError);
+    }
 
     await supabase
       .from('workspace_invitations')
       .update({ accepted_at: new Date().toISOString() })
       .eq('id', invitation.id);
 
+    console.log('[Service] Invitation accepted successfully');
+
     return {
       workspaceId: invitation.workspace_id,
-      workspaceName: invitation.workspace?.name,
+      workspaceName: workspace?.name || 'Workspace',
     };
   }
 }
