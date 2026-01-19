@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { ProgressService } from '@/services/progress.service';
 
 export class TaskService {
-  static async fetchAll(userId: string, workspaceId: string): Promise<TaskResponse[]> {
+  static async fetchAll(workspaceId: string): Promise<TaskResponse[]> {
     const { data, error } = await supabase
       .from('tasks')
       .select(`
@@ -15,7 +15,6 @@ export class TaskService {
         workspace:workspaces!workspace_id (id, name, type),
         subtasks (*)
       `)
-      .eq('user_id', userId)
       .eq('workspace_id', workspaceId)
       .or('is_recurring.eq.false,original_task_id.not.is.null')
       .order('created_at', { ascending: false });
@@ -366,6 +365,7 @@ export class TaskService {
 
     if (error) throw error;
   }
+
   static async markInProgress(taskId: string): Promise<void> {
     const { data: task, error } = await supabase
       .from('tasks')
@@ -384,5 +384,4 @@ export class TaskService {
       })
       .eq('id', taskId);
   }
-
 }

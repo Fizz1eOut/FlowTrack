@@ -41,10 +41,9 @@ export const useTasksStore = defineStore('tasks', () => {
   });
 
   async function fetchTasks(): Promise<TaskResponse[]> {
-    const userId = authStore.userId;
     const workspaceId = workspaceStore.currentWorkspaceId;
 
-    if (!userId || !workspaceId) {
+    if (!workspaceId) {
       tasks.value = [];
       return [];
     }
@@ -53,7 +52,7 @@ export const useTasksStore = defineStore('tasks', () => {
     error.value = null;
 
     try {
-      const data = await TaskService.fetchAll(userId, workspaceId);
+      const data = await TaskService.fetchAll(workspaceId);
       tasks.value = data;
       return data;
     } catch (err) {
@@ -77,7 +76,6 @@ export const useTasksStore = defineStore('tasks', () => {
     },
     { immediate: true }
   );
-
 
   async function createTask(input: CreateTaskInput): Promise<TaskResponse | null> {
     const userId = authStore.userId;
