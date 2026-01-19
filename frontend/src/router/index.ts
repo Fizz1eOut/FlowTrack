@@ -12,6 +12,7 @@ import ResetPasswordView from '@/views/ResetPasswordView.vue';
 
 import TodayView from '@/views/dashboard/TodayView.vue';
 import TeamView from '@/views/dashboard/TeamView.vue';
+import AcceptInvitationView from '@/views/AcceptInvitationView.vue';
 
 const scrollBehavior: RouterScrollBehavior = (to, from, savedPosition) => {
   if (savedPosition) {
@@ -29,6 +30,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/onboarding', name: 'onboarding', component: OnboardingView, meta: { title: 'Get Started', requiresAuth: true } },
   { path: '/forgot-password', name: 'forgot-password', component: ForgotPasswordView, meta: { title: 'Forgot password', requiresAuth: false } },
   { path: '/reset-password', name: 'reset-password', component: ResetPasswordView, meta: { title: 'Reset password', requiresAuth: false } },
+  { path: '/invite/:token', name: 'invite', component: AcceptInvitationView, meta: { title: 'Accept Invitation', requiresAuth: false } },
 
   {
     path: '/dashboard',
