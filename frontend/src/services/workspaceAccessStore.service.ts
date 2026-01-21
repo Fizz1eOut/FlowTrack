@@ -78,7 +78,6 @@ export class WorkspaceMembersService {
 
     console.log('[Service] Accepting invitation, token:', token);
 
-    // Шаг 1: Получаем приглашение
     const { data: invitation, error: invError } = await supabase
       .from('workspace_invitations')
       .select('*')
@@ -96,7 +95,6 @@ export class WorkspaceMembersService {
 
     console.log('[Service] Invitation found:', invitation);
 
-    // Шаг 2: Проверки
     if (new Date(invitation.expires_at) < new Date()) {
       throw new Error('This invitation has expired');
     }
