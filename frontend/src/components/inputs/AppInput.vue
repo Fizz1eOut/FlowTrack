@@ -6,6 +6,7 @@
     placeholder?: string;
     type?: string;
     disabled?: boolean;
+    readonly?: boolean;
   }
   const props = defineProps<SearchInputProps>();
 
@@ -34,6 +35,7 @@
       class="input"
       :placeholder="placeholder"
       :disabled="disabled"
+      :readonly="readonly"
       @input="handleInput"
     />
 
