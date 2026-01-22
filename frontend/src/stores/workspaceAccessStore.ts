@@ -41,8 +41,15 @@ export const useWorkspaceAccessStore = defineStore('workspaceAccess', () => {
     loading.value = true;
     try {
       const invite = await WorkspaceMembersService.inviteMember(input);
+
+      if (!invite) {
+        throw new Error('Failed to create invitation');
+      }
+
       invitations.value[input.workspace_id]?.unshift(invite);
       return invite;
+    } catch (error) {
+      throw error;
     } finally {
       loading.value = false;
     }

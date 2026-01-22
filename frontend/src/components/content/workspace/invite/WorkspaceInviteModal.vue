@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { ref, computed } from 'vue';
   import { useWorkspaceStore } from '@/stores/workspaceStore';
+  import { useWorkspaceAccessStore } from '@/stores/workspaceAccessStore';
   import type { WorkspaceMemberRole } from '@/interface/workspace.interface';
   import WorkspaceInviteHeader from '@/components/content/workspace/invite/WorkspaceInviteHeader.vue';
   import AppInput from '@/components/inputs/AppInput.vue';
@@ -12,7 +13,9 @@
     (e: 'close'): void
   }>();
 
+  const workspaceAccessStore = useWorkspaceAccessStore();
   const workspaceStore = useWorkspaceStore();
+
   const email = ref('');
   const role = ref<WorkspaceMemberRole>('member');
   const loading = ref(false);
@@ -38,7 +41,7 @@
     successMessage.value = null;
 
     try {
-      await workspaceStore.inviteMember({
+      await workspaceAccessStore.inviteMember({
         workspace_id: currentWorkspace.value.id,
         email: email.value.trim(),
         role: role.value,
@@ -92,6 +95,7 @@
           <p v-if="email && !isValidEmail" class="error--text">
             Please enter a valid email address.
           </p>
+          <p class="error--text">{{ error }}</p>
         </div>
 
         <div class="form-workspace__item">

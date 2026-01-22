@@ -21,6 +21,49 @@ export class WorkspaceMembersService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authorized');
 
+    const normalizedEmail = input.email.toLowerCase().trim();
+
+    const { data: existingUser } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (existingUser) {
+      const { data: existingMember } = await supabase
+        .from('workspace_members')
+        .select('id')
+        .eq('workspace_id', input.workspace_id)
+        .eq('user_id', existingUser.id)
+        .maybeSingle();
+
+      if (existingMember) {
+        throw new Error('This user is already a member of this workspace');
+      }
+    }
+
+    const { data: existingInvitation } = await supabase
+      .from('workspace_invitations')
+      .select('id, accepted_at, expires_at')
+      .eq('workspace_id', input.workspace_id)
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (existingInvitation) {
+      if (existingInvitation.accepted_at) {
+        throw new Error('This invitation has already been accepted');
+      }
+
+      if (new Date(existingInvitation.expires_at) > new Date()) {
+        throw new Error('An active invitation for this email already exists');
+      }
+
+      await supabase
+        .from('workspace_invitations')
+        .delete()
+        .eq('id', existingInvitation.id);
+    }
+
     const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 7 * 86400000);
 
@@ -28,7 +71,7 @@ export class WorkspaceMembersService {
       .from('workspace_invitations')
       .insert({
         workspace_id: input.workspace_id,
-        email: input.email.toLowerCase().trim(),
+        email: normalizedEmail,
         role: input.role || 'member',
         invited_by: user.id,
         token,
