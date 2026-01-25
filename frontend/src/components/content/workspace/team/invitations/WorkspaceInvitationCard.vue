@@ -1,14 +1,16 @@
 <script setup lang="ts">
   import { ref, computed } from 'vue';
-  import type { WorkspaceInvitation } from '@/interface/workspace.interface';
   import AppButton from '@/components/base/AppButton.vue';
   import AppInput from '@/components/inputs/AppInput.vue';
-  import WorkspaceMemberRole from '@/components/content/workspace/team/members/WorkspaceMemberRole.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
   import AppContainer from '@/components/base/AppContainer.vue';
+  import type { WorkspaceInvitation } from '@/interface/workspace.interface';
+  import type { WorkspaceMemberRole } from '@/interface/workspace.interface';
+  import { WorkspacePermissions } from '@/utils/workspacePermissions';
 
   interface invitationCardProps {
     invitation: WorkspaceInvitation;
+    currentUserRole?: WorkspaceMemberRole;
   }
   const props = defineProps<invitationCardProps>();
   const emit = defineEmits<{
@@ -18,6 +20,10 @@
   const copiedToken = ref<string | null>(null);
 
   const inviteUrl = computed(() => getInviteUrl(props.invitation.token));
+
+  const canManageInvitations = computed(() => 
+    WorkspacePermissions.canManageMembers(props.currentUserRole)
+  );
 
   const getInviteUrl = (token: string): string => {
     return `${window.location.origin}/FlowTrack/#/invite/${token}`;
@@ -49,14 +55,13 @@
           <div class="invitation-card__info">
             <div class="invitation-card__email">{{ invitation.email }}</div>
             <div class="invitation-card__meta">
-              <workspace-member-role :role="invitation.role" />
               <span class="invitation-card__date">
                 Sent {{ formatDate(invitation.created_at) }}
               </span>
             </div>
           </div>
 
-          <div class="invitation-card__actions">
+          <div v-if="!invitation.accepted_at && canManageInvitations" class="invitation-card__actions">
             <div class="invitation-card__group">
               <div class="invitation-card__label">Invitation link</div>
               <div class="invitation-card__link">

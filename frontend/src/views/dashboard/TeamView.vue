@@ -1,7 +1,26 @@
 <script setup lang="ts">
+  import { computed } from 'vue';
   import WorkspaceInvitationsList from '@/components/content/workspace/team/invitations/WorkspaceInvitationsList.vue';
   import WorkspaceInviteButton from '@/components/content/workspace/invite/WorkspaceInviteButton.vue';
   import AppSubtitle from '@/components/base/AppSubtitle.vue';
+  import { useWorkspaceStore } from '@/stores/workspaceStore';
+  import { useWorkspaceAccessStore } from '@/stores/workspaceAccessStore';
+  import { WorkspacePermissions } from '@/utils/workspacePermissions';
+
+
+  const workspaceStore = useWorkspaceStore();
+  const workspaceAccessStore = useWorkspaceAccessStore();
+
+  const currentWorkspaceId = computed(() => workspaceStore.currentWorkspace?.id);
+
+  const currentUserRole = computed(() => {
+    if (!currentWorkspaceId.value) return undefined;
+    return workspaceAccessStore.getUserRole(currentWorkspaceId.value);
+  });
+
+  const canInviteMembers = computed(() => 
+    WorkspacePermissions.canManageMembers(currentUserRole.value)
+  );
 </script>
 
 <template>
@@ -13,7 +32,7 @@
         </app-subtitle>
         <p class="team__description">Manage team members and invitations</p>
       </div>
-      <workspace-invite-button />
+      <workspace-invite-button v-if="canInviteMembers" />
     </div>
     <div class="team__body">
       <workspace-invitations-list />

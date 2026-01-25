@@ -10,6 +10,11 @@
 
   const loading = computed(() => workspaceAccessStore.loading);
   const currentWorkspaceId = computed(() => workspaceStore.currentWorkspace?.id);
+  
+  const currentUserRole = computed(() => {
+    if (!currentWorkspaceId.value) return undefined;
+    return workspaceAccessStore.getUserRole(currentWorkspaceId.value);
+  });
 
   const invitations = computed(() => {
     if (!currentWorkspaceId.value) return [];
@@ -49,6 +54,7 @@
     (id) => {
       if (!id) return;
       workspaceAccessStore.fetchInvitations(id);
+      workspaceAccessStore.fetchUserRole(id);
     },
     { immediate: true }
   );
@@ -86,7 +92,8 @@
           v-for="invitation in invitations"
           :key="invitation.id"
           :invitation="invitation" 
-          @cancel="handleCancelInvitation" 
+          @cancel="handleCancelInvitation"
+          :currentUserRole="currentUserRole"
         />
       </div>
     </div>
@@ -98,7 +105,8 @@
           v-for="expired in expiredInvitations"
           :invitation="expired"
           :key="expired.id"
-          @cancel="handleCancelInvitation" 
+          @cancel="handleCancelInvitation"
+          :currentUserRole="currentUserRole"
         />
       </div>
     </div>
@@ -110,6 +118,7 @@
           v-for="accepted in acceptedInvitations"
           :invitation="accepted"
           :key="accepted.id"
+          :currentUserRole="currentUserRole"
         />  
       </div>
     </div>
