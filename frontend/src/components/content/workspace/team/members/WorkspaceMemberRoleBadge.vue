@@ -25,6 +25,9 @@
 </template>
 
 <style scoped>
+  .member-role {
+    display: flex;
+  }
   .member-role__label {
     padding: 2px 6px;
     border-radius: var(--radius-sm);

@@ -5,6 +5,7 @@
   import AppIcon from '@/components/base/AppIcon.vue';
   import AppContainer from '@/components/base/AppContainer.vue';
   import WorkspaceInvitationStatus from '@/components/content/workspace/team/invitations/WorkspaceInvitationStatus.vue';
+  import WorkspaceMemberRoleBadge from '@/components/content/workspace/team/members/WorkspaceMemberRoleBadge.vue';
   import type { WorkspaceInvitation } from '@/interface/workspace.interface';
   import type { WorkspaceMemberRole } from '@/interface/workspace.interface';
   import { WorkspacePermissions } from '@/utils/workspacePermissions';
@@ -56,12 +57,13 @@
           <div class="invitation-card__info">
             <div class="invitation-card__email">{{ invitation.email }}</div>
             <div class="invitation-card__meta">
+              <workspace-member-role-badge :role="invitation.role" class="invitation-card__role" />
               <div class="invitation-card__date">
                 Sent {{ formatDate(invitation.created_at) }}
               </div>
-
               <workspace-invitation-status :invitation="invitation" />
             </div>
+
           </div>
 
           <div v-if="!invitation.accepted_at && canManageInvitations" class="invitation-card__actions">
