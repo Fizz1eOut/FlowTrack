@@ -4,6 +4,7 @@
   import AppInput from '@/components/inputs/AppInput.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
   import AppContainer from '@/components/base/AppContainer.vue';
+  import WorkspaceInvitationStatus from '@/components/content/workspace/team/invitations/WorkspaceInvitationStatus.vue';
   import type { WorkspaceInvitation } from '@/interface/workspace.interface';
   import type { WorkspaceMemberRole } from '@/interface/workspace.interface';
   import { WorkspacePermissions } from '@/utils/workspacePermissions';
@@ -55,9 +56,11 @@
           <div class="invitation-card__info">
             <div class="invitation-card__email">{{ invitation.email }}</div>
             <div class="invitation-card__meta">
-              <span class="invitation-card__date">
+              <div class="invitation-card__date">
                 Sent {{ formatDate(invitation.created_at) }}
-              </span>
+              </div>
+
+              <workspace-invitation-status :invitation="invitation" />
             </div>
           </div>
 
@@ -150,7 +153,7 @@
     position: absolute;
     top: 0;
     right: 0;
-    z-index: 10;
+    z-index: 0;
     background-color: var(--color-white);
   }
   .invitation-card__btn {
