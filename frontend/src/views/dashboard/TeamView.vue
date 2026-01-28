@@ -3,10 +3,11 @@
   import WorkspaceInvitationsList from '@/components/content/workspace/team/invitations/WorkspaceInvitationsList.vue';
   import WorkspaceInviteButton from '@/components/content/workspace/invite/WorkspaceInviteButton.vue';
   import AppSubtitle from '@/components/base/AppSubtitle.vue';
+  import WorkspaceMembersList from '@/components/content/workspace/team/members/WorkspaceMembersList.vue';
+  import AppTabs from '@/components/base/AppTabs.vue';
   import { useWorkspaceStore } from '@/stores/workspaceStore';
   import { useWorkspaceAccessStore } from '@/stores/workspaceAccessStore';
   import { WorkspacePermissions } from '@/utils/workspacePermissions';
-
 
   const workspaceStore = useWorkspaceStore();
   const workspaceAccessStore = useWorkspaceAccessStore();
@@ -21,9 +22,14 @@
   const canInviteMembers = computed(() => 
     WorkspacePermissions.canManageMembers(currentUserRole.value)
   );
+
+  const tabs = [
+    { label: 'Members', slotName: 'members' },
+    { label: 'Invitations', slotName: 'invitations' }
+  ];
 </script>
 
-<template>
+<template>  
   <div class="team">
     <div class="team__header">
       <div class="team__row">
@@ -35,7 +41,17 @@
       <workspace-invite-button v-if="canInviteMembers" />
     </div>
     <div class="team__body">
-      <workspace-invitations-list />
+      <app-tabs
+        :tabs="tabs"
+      >
+        <template #members>
+          <workspace-members-list />
+        </template>
+
+        <template #invitations>
+          <workspace-invitations-list />
+        </template>
+      </app-tabs>
     </div>
   </div>
 </template>
@@ -63,6 +79,20 @@
   }
   :deep(.workspace-invite .button) {
     background: var(--gradient-accent);
+  }
+  :deep(.tab__headers) {
+    gap: var(--fs-3xl);
+  }
+  :deep(.tab__button.active) {
+    border-bottom: none;
+    color: var(--primary);
+  }
+  :deep(.tab__button) {
+    font-size: var(--fs-xl);
+    width: auto;
+  }
+  :deep(.invitations-list) {
+    margin-top: var(--space-xl);
   }
   @media (max-width: 420px) {
     .team__header {
