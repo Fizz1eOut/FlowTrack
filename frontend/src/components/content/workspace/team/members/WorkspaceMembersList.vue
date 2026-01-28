@@ -73,7 +73,7 @@
     gap: 10px;
   }
   .members-list__item {
-    max-width: 350px;
+    max-width: 400px;
     width: 100%;
   }
   @media (max-width: 768px) {
