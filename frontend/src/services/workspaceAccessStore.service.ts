@@ -21,7 +21,7 @@ export class WorkspaceMembersService {
 
   static async getUserRole(workspaceId: string): Promise<WorkspaceMemberRole | undefined> {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return undefined; // ✅ вместо null
+    if (!user) return undefined;
 
     const { data, error } = await supabase
       .from('workspace_members')
@@ -39,7 +39,6 @@ export class WorkspaceMembersService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authorized');
 
-    // ✅ Проверка прав
     const userRole = await this.getUserRole(input.workspace_id);
     if (!WorkspacePermissions.canManageMembers(userRole)) {
       throw new Error('Only workspace owner and admins can invite members');
@@ -47,7 +46,6 @@ export class WorkspaceMembersService {
 
     const normalizedEmail = input.email.toLowerCase().trim();
 
-    // Проверяем, не является ли пользователь уже участником
     const { data: existingUser } = await supabase
       .from('profiles')
       .select('id')
@@ -67,7 +65,6 @@ export class WorkspaceMembersService {
       }
     }
 
-    // Проверяем активное приглашение
     const { data: existingInvitation } = await supabase
       .from('workspace_invitations')
       .select('id, accepted_at, expires_at')
@@ -90,7 +87,6 @@ export class WorkspaceMembersService {
         .eq('id', existingInvitation.id);
     }
 
-    // Создаём приглашение
     const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 7 * 86400000);
 
@@ -118,13 +114,11 @@ export class WorkspaceMembersService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authorized');
 
-    // ✅ Проверка прав
     const userRole = await this.getUserRole(workspaceId);
     if (!WorkspacePermissions.canManageMembers(userRole)) {
       throw new Error('Only workspace owner and admins can cancel invitations');
     }
 
-    // Проверяем, что приглашение существует и не принято
     const { data: invitation } = await supabase
       .from('workspace_invitations')
       .select('accepted_at, workspace_id')
@@ -135,7 +129,6 @@ export class WorkspaceMembersService {
       throw new Error('Invitation not found');
     }
 
-    // Проверка, что приглашение для этого workspace
     if (invitation.workspace_id !== workspaceId) {
       throw new Error('Invitation does not belong to this workspace');
     }
@@ -178,13 +171,11 @@ export class WorkspaceMembersService {
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (!currentUser) throw new Error('Not authenticated');
 
-    // ✅ Получаем роль текущего пользователя
     const currentUserRole = await this.getUserRole(workspaceId);
     if (!WorkspacePermissions.canManageMembers(currentUserRole)) {
       throw new Error('Only workspace owner and admins can remove members');
     }
 
-    // Получаем роль удаляемого пользователя
     const { data: targetMember } = await supabase
       .from('workspace_members')
       .select('role')
@@ -196,12 +187,10 @@ export class WorkspaceMembersService {
       throw new Error('Member not found');
     }
 
-    // ✅ Проверяем, можно ли удалить этого участника
     if (!WorkspacePermissions.canRemoveMember(currentUserRole, targetMember.role)) {
       throw new Error('Cannot remove workspace owner');
     }
 
-    // Нельзя удалить самого себя
     if (userId === currentUser.id) {
       throw new Error('You cannot remove yourself. Use "Leave workspace" instead.');
     }
@@ -293,5 +282,47 @@ export class WorkspaceMembersService {
       workspaceId: invitation.workspace_id,
       workspaceName: workspace?.name || 'Workspace',
     };
+  }
+
+  static async changeMemberRole(
+    workspaceId: string,
+    userId: string,
+    newRole: WorkspaceMemberRole
+  ): Promise<void> {
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) throw new Error('Not authenticated');
+
+    const currentUserRole = await this.getUserRole(workspaceId);
+  
+    if (!WorkspacePermissions.canChangeRoles(currentUserRole)) {
+      throw new Error('Only workspace owner can change member roles');
+    }
+
+    const { data: targetMember } = await supabase
+      .from('workspace_members')
+      .select('role')
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!targetMember) {
+      throw new Error('Member not found');
+    }
+
+    if (targetMember.role === 'owner') {
+      throw new Error('Cannot change the role of workspace owner');
+    }
+
+    if (userId === currentUser.id) {
+      throw new Error('You cannot change your own role');
+    }
+
+    const { error } = await supabase
+      .from('workspace_members')
+      .update({ role: newRole })
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
   }
 }

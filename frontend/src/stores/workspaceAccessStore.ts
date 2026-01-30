@@ -118,6 +118,34 @@ export const useWorkspaceAccessStore = defineStore('workspaceAccess', () => {
     return WorkspaceMembersService.acceptInvitation(token);
   }
 
+  async function changeMemberRole(
+    workspaceId: string,
+    userId: string,
+    newRole: WorkspaceMemberRole
+  ) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      await WorkspaceMembersService.changeMemberRole(workspaceId, userId, newRole);
+
+      const workspaceMembers = members.value[workspaceId];
+      if (workspaceMembers) {
+        members.value[workspaceId] = workspaceMembers.map(member =>
+          member.user_id === userId
+            ? { ...member, role: newRole }
+            : member
+        );
+      }
+    } catch (e) {
+      const err = e instanceof Error ? e.message : String(e);
+      error.value = err;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   return {
     invitations: readonly(invitations),
     members: readonly(members),
@@ -136,5 +164,6 @@ export const useWorkspaceAccessStore = defineStore('workspaceAccess', () => {
     removeMember,
     fetchMembers,
     acceptInvitation,
+    changeMemberRole
   };
 });

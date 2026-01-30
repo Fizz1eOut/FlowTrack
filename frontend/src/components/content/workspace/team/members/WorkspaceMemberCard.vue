@@ -28,7 +28,7 @@
               {{ member.profile?.email }}
             </div>
           </div>
-          <div class="member-card__menu">
+          <div class="member-card__menu" v-if="member.role !== 'owner'">
             <app-button @click="isOpen = !isOpen">
               <app-icon 
                 name="three-dots"
