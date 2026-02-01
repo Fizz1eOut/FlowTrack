@@ -6,6 +6,7 @@
   import AppIcon from '@/components/base/AppIcon.vue';
   import WorkspaceMemberRoleBadge from '@/components/content/workspace/team/members/WorkspaceMemberRoleBadge.vue';
   import WorkspaceMemberCardMenu from '@/components/content/workspace/team/members/WorkspaceMemberCardMenu.vue';
+  import ProfileAvatar from '@/components/content/profile/ProfileAvatar.vue';
 
   interface WorkspaceMemberCardProps {
     member: WorkspaceMember;
@@ -18,32 +19,35 @@
 <template>
   <div class="member-card">
     <app-container size="md">
-      <div class="member-card__content">
-        <div class="member-card__field">
-          <div class="member-card__info">
-            <div class="member-card__name">
-              {{ member.profile?.full_name }}
+      <div class="member-card__body">
+        <profile-avatar :id="member.user_id" size="lg" />
+        <div class="member-card__content">
+          <div class="member-card__field">
+            <div class="member-card__info">
+              <div class="member-card__name">
+                {{ member.profile?.full_name }}
+              </div>
+              <div class="member-card__email">
+                {{ member.profile?.email }}
+              </div>
             </div>
-            <div class="member-card__email">
-              {{ member.profile?.email }}
+            <div class="member-card__menu" v-if="member.role !== 'owner'">
+              <app-button @click="isOpen = !isOpen">
+                <app-icon 
+                  name="three-dots"
+                  size="var(--fs-xl)"
+                  color="var(--color-black)"
+                />
+              </app-button>
+              <workspace-member-card-menu :active="isOpen" :member="member" />
             </div>
           </div>
-          <div class="member-card__menu" v-if="member.role !== 'owner'">
-            <app-button @click="isOpen = !isOpen">
-              <app-icon 
-                name="three-dots"
-                size="var(--fs-xl)"
-                color="var(--color-black)"
-              />
-            </app-button>
-            <workspace-member-card-menu :active="isOpen" :member="member" />
-          </div>
-        </div>
 
-        <div class="member-card__row">
-          <workspace-member-role-badge :role="member.role" />
-          <div class="member-card__joined">
-            Joined: {{ new Date(member.joined_at).toLocaleDateString() }}
+          <div class="member-card__row">
+            <workspace-member-role-badge :role="member.role" />
+            <div class="member-card__joined">
+              Joined: {{ new Date(member.joined_at).toLocaleDateString() }}
+            </div>
           </div>
         </div>
       </div>
@@ -59,6 +63,14 @@
   }
   .member-card:hover {
     border: 1px solid var(--success);
+  }
+  .member-card__body {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .member-card__content {
+    width: 100%;
   }
   .member-card__field {
     display: flex;
