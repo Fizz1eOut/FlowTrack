@@ -23,7 +23,13 @@ export const useWorkspaceAccessStore = defineStore('workspaceAccess', () => {
     members.value[workspaceId] || [];
 
   function getUserRole(workspaceId: string): WorkspaceMemberRole | undefined {
-    return userRoles.value[workspaceId];
+    const role = userRoles.value[workspaceId];
+  
+    if (role === undefined) {
+      fetchUserRole(workspaceId);
+    }
+  
+    return role;
   }
 
   async function fetchUserRole(workspaceId: string): Promise<WorkspaceMemberRole | undefined> {

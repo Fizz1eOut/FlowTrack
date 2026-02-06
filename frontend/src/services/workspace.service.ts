@@ -32,10 +32,8 @@ export class WorkspaceService {
       return [];
     }
 
-    console.log('[WorkspaceService] Found memberships:', members);
-
     const workspaceIds = members.map(m => m.workspace_id);
-  
+
     const { data: workspaces, error: wsError } = await supabase
       .from('workspaces')
       .select('id, name, type, owner_id, description, color, created_at')
@@ -46,28 +44,36 @@ export class WorkspaceService {
       throw wsError;
     }
 
-    console.log('[WorkspaceService] Found workspaces:', workspaces);
-
     return workspaces ?? [];
   }
 
-  static async createWorkspace(input: CreateWorkspaceInput): Promise<WorkspaceResponse> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authorized');
+  static async createWorkspace(
+    input: CreateWorkspaceInput
+  ): Promise<WorkspaceResponse> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User not authorized');
+    }
 
-    const { data: workspace, error: workspaceError } = await supabase
+    const { name, type, description, color } = input;
+
+    const { data: workspace, error } = await supabase
       .from('workspaces')
       .insert({
-        name: input.name,
-        type: input.type || 'team',
-        description: input.description || null,
-        color: input.color || '#3b82f6',
+        name,
+        type,
+        description: description ?? null,
+        color: color ?? null,
         owner_id: user.id,
       })
       .select()
       .single();
 
-    if (workspaceError) throw workspaceError;
+    if (error) {
+      console.error('[WorkspaceService] Failed to create workspace:', error);
+      throw error;
+    }
+
 
     return workspace;
   }
@@ -234,15 +240,10 @@ export class WorkspaceService {
 
     const { data: invitation, error: fetchError } = await supabase
       .from('workspace_invitations')
-      .select(`
-      *,
-      workspace:workspace_id (
-        id,
-        name
-      )
-    `)
+      .select('*')
       .eq('token', token)
       .single();
+
 
     if (fetchError || !invitation) {
       throw new Error('Invitation not found');
