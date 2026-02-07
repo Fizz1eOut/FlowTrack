@@ -7,7 +7,6 @@ export const useProfileStore = defineStore('profile', () => {
   const profileCache = ref<Record<string, UserProfile>>({});
   const loading = ref<Record<string, boolean>>({});
 
-  // Получение профиля по ID
   async function loadProfile(userId: string): Promise<UserProfile | null> {
     if (loading.value[userId]) {
       return profileCache.value[userId] || null;
@@ -42,7 +41,6 @@ export const useProfileStore = defineStore('profile', () => {
     }
   }
 
-  // Обновление профиля
   async function updateProfile(
     userId: string,
     updates: Partial<Omit<UserProfile, 'id' | 'email'>>
@@ -55,7 +53,6 @@ export const useProfileStore = defineStore('profile', () => {
 
       if (error) throw error;
 
-      // Обновляем кэш
       if (profileCache.value[userId]) {
         profileCache.value[userId] = {
           ...profileCache.value[userId],
@@ -70,13 +67,11 @@ export const useProfileStore = defineStore('profile', () => {
     }
   }
 
-  // Обновление аватара
   async function updateAvatar(userId: string, file: File): Promise<string | null> {
     try {
-      // 1. Загружаем файл в storage
       const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${userId}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -86,14 +81,12 @@ export const useProfileStore = defineStore('profile', () => {
 
       if (uploadError) throw uploadError;
 
-      // 2. Получаем публичный URL
       const { data } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
       const avatarUrl = data.publicUrl;
 
-      // 3. Обновляем профиль
       const success = await updateProfile(userId, { avatar_url: avatarUrl });
 
       return success ? avatarUrl : null;
@@ -103,21 +96,17 @@ export const useProfileStore = defineStore('profile', () => {
     }
   }
 
-  // Удаление аватара
   async function deleteAvatar(userId: string): Promise<boolean> {
     try {
       const profile = profileCache.value[userId];
       
       if (profile?.avatar_url) {
-        // Извлекаем путь к файлу из URL
         const urlParts = profile.avatar_url.split('/');
         const filePath = `avatars/${urlParts[urlParts.length - 1]}`;
 
-        // Удаляем файл из storage
         await supabase.storage.from('avatars').remove([filePath]);
       }
 
-      // Обновляем профиль
       return await updateProfile(userId, { avatar_url: null });
     } catch (error) {
       console.error('Error deleting avatar:', error);
@@ -125,7 +114,6 @@ export const useProfileStore = defineStore('profile', () => {
     }
   }
 
-  // Изменение пароля
   async function updatePassword(newPassword: string): Promise<boolean> {
     try {
       const { error } = await supabase.auth.updateUser({
@@ -140,7 +128,6 @@ export const useProfileStore = defineStore('profile', () => {
     }
   }
 
-  // Геттеры
   function getProfile(userId: string): UserProfile | null {
     return profileCache.value[userId] || null;
   }
