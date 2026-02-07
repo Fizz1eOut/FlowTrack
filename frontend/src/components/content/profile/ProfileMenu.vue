@@ -1,12 +1,13 @@
 <script setup lang="ts">
   import { computed } from 'vue';
   import { useRouter } from 'vue-router';
+  import { useAuthStore } from '@/stores/authStore';
+  import { vClickOutside } from '@/directives/clickOutside';
+  import ProfileAvatarUpload from '@/components/content/profile/ProfileAvatarUpload.vue';
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
   import ProfileAvatar from '@/components/content/profile/ProfileAvatar.vue';
   import AppDropdown from '@/components/base/AppDropdown.vue';
-  import { useAuthStore } from '@/stores/authStore';
-  import { vClickOutside } from '@/directives/clickOutside';
 
   interface ProfileMenuProps {
     active: boolean;
@@ -43,7 +44,18 @@
 <template>
   <app-dropdown :active="active" v-click-outside="closeDropdown">
     <div class="profile-menu__header">
-      <profile-avatar v-if="userId" :id="userId" size="lg" />
+      <div class="profile-menu__row">
+        <profile-avatar 
+          v-if="userId" 
+          :id="userId" 
+          size="lg"
+        />
+        <profile-avatar-upload 
+          v-if="userId" 
+          :user-id="userId"
+          class="profile-menu__upload-avatar"
+        />
+      </div>
       <div class="profile-menu__info">
         <div class="profile-menu__name">{{ userFullName}}</div>
         <div class="profile-menu__email">
@@ -97,6 +109,15 @@
     justify-content: space-between;
     align-items: center;
     gap: 10px;
+  }
+  .profile-menu__row {
+    position: relative;
+  }
+  .profile-menu__upload-avatar {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
   .profile-menu__name {
     font-size: var(--fs-lg);

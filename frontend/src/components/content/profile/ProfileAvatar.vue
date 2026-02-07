@@ -31,6 +31,7 @@
       :src="avatarUrl" 
       :alt="initials"
       class="profile-image"
+      :class="sizeClasses"
     />
     <span v-else class="profile-initial">{{ initials }}</span>
   </div>
@@ -45,6 +46,10 @@
   background-color: var(--primary);
   border-radius: var(--radius-full);
   cursor: pointer;
+  transition: transform 0.3s ease-in-out;
+ }
+ .profile:hover {
+  transform: scale(1.1);
  }
  .size-sm {
   width: 30px;
