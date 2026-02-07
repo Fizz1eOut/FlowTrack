@@ -96,24 +96,6 @@ export const useProfileStore = defineStore('profile', () => {
     }
   }
 
-  async function deleteAvatar(userId: string): Promise<boolean> {
-    try {
-      const profile = profileCache.value[userId];
-      
-      if (profile?.avatar_url) {
-        const urlParts = profile.avatar_url.split('/');
-        const filePath = `avatars/${urlParts[urlParts.length - 1]}`;
-
-        await supabase.storage.from('avatars').remove([filePath]);
-      }
-
-      return await updateProfile(userId, { avatar_url: null });
-    } catch (error) {
-      console.error('Error deleting avatar:', error);
-      return false;
-    }
-  }
-
   async function updatePassword(newPassword: string): Promise<boolean> {
     try {
       const { error } = await supabase.auth.updateUser({
@@ -189,7 +171,6 @@ export const useProfileStore = defineStore('profile', () => {
     loadProfile,
     updateProfile,
     updateAvatar,
-    deleteAvatar,
     updatePassword,
     
     getProfile,
