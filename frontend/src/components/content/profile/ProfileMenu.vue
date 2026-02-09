@@ -8,6 +8,7 @@
   import AppIcon from '@/components/base/AppIcon.vue';
   import ProfileAvatar from '@/components/content/profile/ProfileAvatar.vue';
   import AppDropdown from '@/components/base/AppDropdown.vue';
+  import ProfileNameEdit from '@/components/content/profile/ProfileNameEdit.vue';
 
   interface ProfileMenuProps {
     active: boolean;
@@ -57,7 +58,7 @@
         />
       </div>
       <div class="profile-menu__info">
-        <div class="profile-menu__name">{{ userFullName}}</div>
+        <profile-name-edit  v-if="userId" :user-id="userId" />
         <div class="profile-menu__email">
           <app-icon 
             name="mail" 
@@ -118,10 +119,6 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-  }
-  .profile-menu__name {
-    font-size: var(--fs-lg);
-    font-weight: var(--fw-medium);
   }
   .profile-menu__email {
     margin-top: var(--space-xs);
