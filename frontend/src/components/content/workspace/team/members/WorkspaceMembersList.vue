@@ -71,14 +71,9 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
   }
   .members-list__item {
-    max-width: 400px;
     width: 100%;
-  }
-  @media (max-width: 768px) {
-    .members-list__items {
-      flex-wrap: wrap;
-    }
   }
 </style>

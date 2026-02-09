@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { ref, onMounted, onBeforeUnmount } from 'vue';
   import type { WorkspaceMember } from '@/interface/workspace.interface';
   import AppContainer from '@/components/base/AppContainer.vue';
   import AppButton from '@/components/base/AppButton.vue';
@@ -14,6 +14,30 @@
   defineProps<WorkspaceMemberCardProps>();
 
   const isOpen = ref(false);
+  const timerBadgeRef = ref<HTMLElement | null>(null);
+
+  function toggleDropdown() {
+    isOpen.value = !isOpen.value;
+  }
+
+  function closeDropdown() {
+    isOpen.value = false;
+  }
+
+  function handleClickOutside(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (timerBadgeRef.value && !timerBadgeRef.value.contains(target)) {
+      closeDropdown();
+    }
+  }
+
+  onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+  });
+
+  onBeforeUnmount(() => {
+    document.removeEventListener('click', handleClickOutside);
+  });
 </script>
 
 <template>
@@ -31,15 +55,15 @@
                 {{ member.profile?.email }}
               </div>
             </div>
-            <div class="member-card__menu" v-if="member.role !== 'owner'">
-              <app-button @click="isOpen = !isOpen">
+            <div class="member-card__menu" v-if="member.role !== 'owner'" ref="timerBadgeRef">
+              <app-button @click="toggleDropdown">
                 <app-icon 
                   name="three-dots"
                   size="var(--fs-xl)"
                   color="var(--color-black)"
                 />
               </app-button>
-              <workspace-member-card-menu :active="isOpen" :member="member" />
+              <workspace-member-card-menu :active="isOpen" :member="member" @close="closeDropdown" />
             </div>
           </div>
 
@@ -63,6 +87,9 @@
   }
   .member-card:hover {
     border: 1px solid var(--success);
+  }
+  .member-card:not(:last-child) {
+    margin-bottom: var(--space-sm);
   }
   .member-card__body {
     display: flex;

@@ -12,6 +12,11 @@
   }
   const props = defineProps<WorkspaceMemberCardMenuProps>();
 
+  interface Emits {
+    (e: 'close'): void;
+  }
+  defineEmits<Emits>();
+
   const workspaceAccessStore = useWorkspaceAccessStore();
 
   const currentUserRole = computed(() => 
