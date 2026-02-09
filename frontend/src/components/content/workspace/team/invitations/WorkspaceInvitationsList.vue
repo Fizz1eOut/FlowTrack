@@ -85,41 +85,43 @@
       </div>
     </div>
 
-    <div class="invitations-list__items" v-if="invitations.length > 0">
-      <div class="title">Pending ({{ invitations.length }})</div>
-      <div class="invitations-list__item">
-        <workspace-invitation-card 
-          v-for="invitation in invitations"
-          :key="invitation.id"
-          :invitation="invitation" 
-          @cancel="handleCancelInvitation"
-          :currentUserRole="currentUserRole"
-        />
+    <div class="invitations-list__group">
+      <div class="invitations-list__items" v-if="invitations.length > 0">
+        <div class="title">Pending ({{ invitations.length }})</div>
+        <div class="invitations-list__item">
+          <workspace-invitation-card 
+            v-for="invitation in invitations"
+            :key="invitation.id"
+            :invitation="invitation" 
+            @cancel="handleCancelInvitation"
+            :currentUserRole="currentUserRole"
+          />
+        </div>
       </div>
-    </div>
 
-    <div class="expired-invitations__items" v-if="expiredInvitations.length > 0">
-      <div class="title">Expired ({{ expiredInvitations.length }})</div>
-      <div class="expired-invitations__item">
-        <workspace-invitation-card 
-          v-for="expired in expiredInvitations"
-          :invitation="expired"
-          :key="expired.id"
-          @cancel="handleCancelInvitation"
-          :currentUserRole="currentUserRole"
-        />
+      <div class="expired-invitations__items" v-if="expiredInvitations.length > 0">
+        <div class="title">Expired ({{ expiredInvitations.length }})</div>
+        <div class="expired-invitations__item">
+          <workspace-invitation-card 
+            v-for="expired in expiredInvitations"
+            :invitation="expired"
+            :key="expired.id"
+            @cancel="handleCancelInvitation"
+            :currentUserRole="currentUserRole"
+          />
+        </div>
       </div>
-    </div>
 
-    <div class="accepted-invitations__items" v-if="acceptedInvitations.length > 0">
-      <div class="title">Accepted ({{ acceptedInvitations.length }})</div>
-      <div class="accepted-invitations__item">
-        <workspace-invitation-card 
-          v-for="accepted in acceptedInvitations"
-          :invitation="accepted"
-          :key="accepted.id"
-          :currentUserRole="currentUserRole"
-        />  
+      <div class="accepted-invitations__items" v-if="acceptedInvitations.length > 0">
+        <div class="title">Accepted ({{ acceptedInvitations.length }})</div>
+        <div class="accepted-invitations__item">
+          <workspace-invitation-card 
+            v-for="accepted in acceptedInvitations"
+            :invitation="accepted"
+            :key="accepted.id"
+            :currentUserRole="currentUserRole"
+          />  
+        </div>
       </div>
     </div>
   </div>
@@ -130,6 +132,9 @@
     font-size: var(--fs-lg);
     color: var(--color-gray);
     margin-bottom: var(--space-md);
+  }
+  .invitations-list__group > *:not(:last-child) {
+    margin-bottom: var(--space-lg) 
   }
   .accepted-invitations__item:not(:last-child) {
     margin-bottom: var(--space-xs);

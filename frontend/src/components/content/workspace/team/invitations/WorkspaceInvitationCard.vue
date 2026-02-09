@@ -118,7 +118,10 @@
     transition: border 0.3s ease-in-out;
   }
   .invitation-card:hover {
-     border: 1px solid var(--success);
+    border: 1px solid var(--success);
+  }
+  .invitation-card:not(:last-child) {
+    margin-bottom: var(--space-sm);
   }
   .invitation-card__email {
     font-size: var(--space-md);
