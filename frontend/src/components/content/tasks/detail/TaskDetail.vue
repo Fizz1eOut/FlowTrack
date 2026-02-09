@@ -128,7 +128,7 @@
   .task-detail__header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
   }
   .task-detail__btn--cross {

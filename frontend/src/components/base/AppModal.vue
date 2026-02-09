@@ -62,7 +62,6 @@
     width: 100%;
   }
   .content {
-    border-radius: var(--radius-md);
     max-width: 700px;
     width: 100%;
   }
