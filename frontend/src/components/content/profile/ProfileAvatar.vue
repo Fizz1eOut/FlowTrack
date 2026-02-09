@@ -47,6 +47,7 @@
   border-radius: var(--radius-full);
   cursor: pointer;
   transition: transform 0.3s ease-in-out;
+  flex-shrink: 0;
  }
  .profile:hover {
   transform: scale(1.1);
