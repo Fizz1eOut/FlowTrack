@@ -58,7 +58,6 @@
     background-color: var(--color-white);
     border-radius: var(--radius-sm);
     border: 1px solid var(--border);
-    box-shadow: var(--shadow-lg);
     outline: none;
   }
   .input:focus {
