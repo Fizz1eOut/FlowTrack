@@ -54,7 +54,7 @@
   }
   @media (max-width: 480px) {
     .dashboard-layout__body {
-      grid-template-columns: 0 1fr;
+      grid-template-columns: 100% 1fr;
     }
     .sidebar-wrapper {
       position: fixed;
