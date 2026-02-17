@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { ref, computed } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '@/stores/authStore';
   import { vClickOutside } from '@/directives/clickOutside';
@@ -9,6 +9,8 @@
   import ProfileAvatar from '@/components/content/profile/ProfileAvatar.vue';
   import AppDropdown from '@/components/base/AppDropdown.vue';
   import ProfileNameEdit from '@/components/content/profile/ProfileNameEdit.vue';
+  import AppModal from '@/components/base/AppModal.vue';
+  import ChangePasswordModal from '@/components/content/auth/forms/ChangePasswordModal.vue';
 
   interface ProfileMenuProps {
     active: boolean;
@@ -21,14 +23,17 @@
 
   const authStore = useAuthStore();
   const router = useRouter();
-
   const userId = computed(() => authStore.userId);
-  const userFullName = computed(() => authStore.userFullName);
   const userEmail = computed(() => authStore.userEmail);
+  const isOpen = ref(false);
 
-  const handleChangePassword = () => {
-    router.push('/settings/password');
-    emit('close');
+  const openModal = () => {
+    isOpen.value = true;
+  };
+
+  const closeModal = () => {
+    isOpen.value = false;
+    
   };
 
   const handleLogout = async () => {
@@ -75,7 +80,7 @@
     <div class="profile-menu__item">
       <app-button 
         class="profile-menu__btn"
-        @click="handleChangePassword"
+        @click="openModal"
       >
         <app-icon 
           name="lock" 
@@ -84,6 +89,13 @@
         />
         <span>Change password</span>
       </app-button>
+
+      <app-modal
+        v-model="isOpen"
+        :scrollable="true"
+      >
+        <change-password-modal @close="closeModal" />
+      </app-modal>
     </div>
 
     <div class="profile-menu__divider"></div>
