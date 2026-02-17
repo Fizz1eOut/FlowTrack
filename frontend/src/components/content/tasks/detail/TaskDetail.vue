@@ -86,7 +86,7 @@
 <template>
   <div class="task-detail">
     <div class="task-detail__header">
-      <app-subtitle>
+      <app-subtitle class="task-detail__title">
         {{ task.title }}
       </app-subtitle>
       <app-button @click="$emit('close')" class="task-detail__btn--cross">
@@ -130,6 +130,13 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 10px;
+  }
+  .task-detail__title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
   }
   .task-detail__btn--cross {
     width: var(--fs-xl);

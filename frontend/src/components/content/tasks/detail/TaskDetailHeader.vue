@@ -26,11 +26,20 @@
   .task-detail-header {
     margin-top: var(--space-lg);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
   }
   .task-detail-header__status {
-    max-width: 200px;
-    width: 100%;
+    max-width: 180px;
+    min-width: 180px;
+    width: 100%;  
+  }
+  @media (max-width: 480px) {
+    .task-detail-header {
+      flex-wrap: wrap;
+    }
+    .task-detail-header__status {
+      max-width: 100%;
+    }
   }
 </style>
