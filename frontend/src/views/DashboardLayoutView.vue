@@ -49,7 +49,7 @@
 
   @media (max-width: 768px) {
     .dashboard-layout__body.sidebar-open {
-      grid-template-columns: 160px 1fr;
+      grid-template-columns: 64px 1fr;
     }
   }
   @media (max-width: 480px) {
@@ -68,6 +68,9 @@
     }
     .dashboard-layout__body.sidebar-open .sidebar-wrapper {
       transform: translateX(0);
+    }
+    .dashboard-layout__body.sidebar-open {
+      grid-template-columns: 100% 1fr;
     }
   }
 </style>
