@@ -43,10 +43,17 @@
 </template>
 
 <style scoped>
+  .task-card-tags {
+    max-width: 440px;
+    min-width: 0;
+    overflow: hidden;
+  }
   .task-card-tags__group {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
+    overflow: hidden;
   }
   .task-card-tags__badge {
     padding: 6px 10px;
@@ -55,36 +62,39 @@
     background: transparent;
     font-size: var(--fs-md);
     font-weight: var(--fw-medium);
+    flex-shrink: 0;
+  }
+  .task-card-tags__tags {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .task-card-tags__tags::-webkit-scrollbar {
+    display: none;
   }
   .tags__list {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     gap: 10px;
+    flex-wrap: nowrap;
   }
   .tag__item {
     padding: 6px 10px;
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    flex-shrink: 0; 
-    width: max-content;
-    white-space: nowrap;   
+    flex-shrink: 0;
+    white-space: nowrap;
   }
-  .task-card-tags__group--scroll {
-    overflow-x: auto;
-    max-width: 430px;
+  .task-card-tags__group--scroll .task-card-tags__tags {
+    scrollbar-width: thin;
   }
-  .task-card-tags__group--scroll .tag__item {
-    flex-shrink: 0; 
-    width: max-content;
-    white-space: nowrap; 
+  .task-card-tags__group--scroll .task-card-tags__tags::-webkit-scrollbar {
+    display: block;
+    height: 4px;
   }
-
-  @media (max-width: 500px) {
-    .task-card-tags__group,
-    .task-card-tags__tags {
-      flex-wrap: wrap;
-      justify-content: flex-start;
-    }
+  .task-card-tags__group--scroll .task-card-tags__tags::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
   }
 </style>

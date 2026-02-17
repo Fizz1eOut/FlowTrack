@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, computed } from 'vue';
+  import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
   import type { TaskResponse } from '@/interface/task.interface';
   import { useTasksStore } from '@/stores/taskStore';
   import { TaskStatusUtils } from '@/utils/taskStatus';
@@ -20,6 +20,7 @@
 
   const taskStore = useTasksStore();
   const isOpen = ref(false);
+  const timerBadgeRef = ref<HTMLElement | null>(null);
 
   const isCompleted = computed(() => TaskStatusUtils.isCompleted(props.task.status));
   const canCheck = computed(() => TaskStatusUtils.canCheck(props.task.status));
@@ -50,6 +51,21 @@
       showToast('Task marked as incomplete', 'success');
     }
   }
+
+  function handleClickOutside(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (timerBadgeRef.value && !timerBadgeRef.value.contains(target)) {
+      isOpen.value = false;
+    }
+  }
+
+  onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+  });
+
+  onBeforeUnmount(() => {
+    document.removeEventListener('click', handleClickOutside);
+  });
 </script>
 
 <template>
@@ -64,7 +80,12 @@
         <div class="task-card-header__title" :class="{ 'completed': isCompleted }">{{ task.title }}</div>
       </div>
 
-      <div v-if="!isCompleted" class="task-card-header__options" @click.stop>
+      <div 
+        v-if="!isCompleted"
+        ref="timerBadgeRef"
+        @click.stop
+        class="task-card-header__options"
+      >
         <app-button @click="isOpen = !isOpen">
           <app-icon 
             name="three-dots"
@@ -92,6 +113,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
   }
   .completed {
     opacity: 0.6;
@@ -100,6 +122,10 @@
   .task-card-header__title {
     font-size: var(--fs-xl);
     color: var(--color-black);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%
   }
   .task-card-header__options {
     position: relative;

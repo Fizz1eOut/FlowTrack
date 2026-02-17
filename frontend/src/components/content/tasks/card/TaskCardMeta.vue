@@ -95,4 +95,9 @@
     border-radius: var(--radius-md);
     background: var(--gradient-subtle);
   }
+  @media (max-width: 480px) {
+    .task-card-meta__group {
+      flex-wrap: wrap;
+    }
+  }
 </style>
