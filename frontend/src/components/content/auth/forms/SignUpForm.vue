@@ -58,9 +58,8 @@
   );
 
   const onSubmit = handleSubmit(async (values: SignUpFormValues) => {
-    // Защита от повторных вызовов
     if (isSubmitting.value || loading.value) {
-      console.warn('[SignUpForm] ⚠️ Already submitting - IGNORED');
+
       return;
     }
 
@@ -69,19 +68,12 @@
 
     try {
       loading.value = true;
-  
-      console.log('[SignUpForm] 🔵 Form submitted:', {
-        email: values.email,
-        timestamp: new Date().toISOString()
-      });
     
       const result = await authStore.signUp({
         email: values.email.trim().toLowerCase(),
         password: values.password,
         name: values.name.trim(),
       });
-
-      console.log('[SignUpForm] 🟢 SignUp result:', result);
 
       if (!result.success) {
         const errorLower = result.error?.toLowerCase() || '';
@@ -100,22 +92,16 @@
           localStorage.setItem('rememberMe', 'true');
         }
       
-        console.log('[SignUpForm] ✅ Registration successful, redirecting...');
-      
-        // Небольшая задержка перед редиректом
         await new Promise(resolve => setTimeout(resolve, 500));
         router.push({ name: 'onboarding' });
       }
     } catch (err: unknown) {
-      console.error('[SignUpForm] ❌ Unexpected error:', err);
       signupError.value = err instanceof Error ? err.message : 'An unexpected error occurred';
     } finally {
       loading.value = false;
     
-      // Сбрасываем флаг через задержку
       setTimeout(() => {
         isSubmitting.value = false;
-        console.log('[SignUpForm] 🔵 Submit lock released');
       }, 2000);
     }
   });
