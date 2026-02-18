@@ -42,7 +42,6 @@ export const useTasksStore = defineStore('tasks', () => {
 
   async function fetchTasks(): Promise<TaskResponse[]> {
     const workspaceId = workspaceStore.currentWorkspaceId;
-
     if (!workspaceId) {
       tasks.value = [];
       return [];
@@ -52,6 +51,9 @@ export const useTasksStore = defineStore('tasks', () => {
     error.value = null;
 
     try {
+      if (authStore.userId) {
+        await RecurringTaskService.checkAndCreateCopies(authStore.userId);
+      }
       const data = await TaskService.fetchAll(workspaceId);
       tasks.value = data;
       return data;
