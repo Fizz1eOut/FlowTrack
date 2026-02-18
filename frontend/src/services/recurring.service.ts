@@ -1,6 +1,7 @@
 import { supabase } from '@/utils/supabase';
 import type { TaskResponse, Subtask } from '@/interface/task.interface';
 import { SubtaskService } from '@/services/subtasks.service';
+import { PostgrestError } from '@supabase/supabase-js';
 
 export class RecurringTaskService {
   static async createTodayCopy(templateTaskId: string): Promise<TaskResponse | null> {
@@ -47,6 +48,14 @@ export class RecurringTaskService {
       .single();
 
     if (insertError) throw insertError;
+
+    if (insertError) {
+      if ((insertError as PostgrestError).code === '23505') {
+        console.log('[RecurringTaskService] Today copy already exists (concurrent insert)');
+        return null;
+      }
+      throw insertError;
+    }
 
     if (templateTask.subtasks && templateTask.subtasks.length > 0) {
       const titles = templateTask.subtasks.map((st: Subtask) => st.title);
