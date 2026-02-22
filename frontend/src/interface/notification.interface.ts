@@ -1,9 +1,12 @@
-export type NotificationType = 
-  | 'workspace_invitation' 
-  | 'task_deadline'
-  | 'invitation_accepted'
+export type NotificationType =
+  | 'workspace_invitation'
   | 'task_assigned'
-  | 'member_joined';
+  | 'task_deadline'
+  | 'task_completed'
+  | 'invitation_accepted'
+  | 'member_joined'
+  | 'mention'
+  | 'system';
 
 export interface BaseNotificationData {
   [key: string]: unknown;

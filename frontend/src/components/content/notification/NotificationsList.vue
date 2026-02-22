@@ -1,13 +1,15 @@
 <script setup lang="ts">
+  import { useRouter } from 'vue-router';
   import { useNotificationStore } from '@/stores/notificationStore';
   import type { WorkspaceInvitationData } from '@/interface/notification.interface';
   import NotificationCard from '@/components/content/notification/NotificationCard.vue';
 
   const notificationStore = useNotificationStore();
+  const router = useRouter();
 
   async function handleInvitation(notificationId: string, token: string) {
     await notificationStore.markAsRead(notificationId);
-    window.location.href = `/invite/${token}`;
+    router.push(`/invite/${token}`);
   }
 </script>
 
@@ -20,6 +22,7 @@
       @invitation="handleInvitation(notification.id, (notification.data as WorkspaceInvitationData).token)"
       @mark-as-read="notificationStore.markAsRead(notification.id)"
       @delete="notificationStore.deleteNotification(notification.id)"
+      class="notification-list__item"
     />
   </div>
 </template>

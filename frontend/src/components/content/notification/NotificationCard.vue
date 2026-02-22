@@ -32,7 +32,7 @@
         <app-icon 
           name="marker"
           size="8px"
-          :color="notification.read ? 'var(--color-gray)' : 'var(--color-primary)'"
+          :color="notification.read ? 'var(--color-gray)' : 'var(--primary)'"
         />
       </div>
       <p v-if="notification.message" class="notification__message">{{ notification.message }}</p>
