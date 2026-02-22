@@ -18,6 +18,12 @@
     }
   }
 
+  function toggleDropdown() {
+    if (hasNotifications.value) {
+      active.value = !active.value;
+    }
+  }
+
   onMounted(() => {
     document.addEventListener('click', handleClickOutside);
     notificationStore.fetchNotifications();
@@ -29,7 +35,7 @@
 </script>
 
 <template>
-  <div @click="active = !active" ref="notificationRef" class="notification">
+  <div @click="toggleDropdown()" ref="notificationRef" class="notification">
     <div v-if="hasNotifications" class="notification__count">
       {{ notificationStore.unreadCount }}
     </div>
