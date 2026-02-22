@@ -167,7 +167,6 @@ export class WorkspaceService {
       .single();
 
     if (insertError) throw insertError;
-
     return data;
   }
 

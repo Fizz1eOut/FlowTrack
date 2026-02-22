@@ -40,6 +40,7 @@ export class WorkspaceMembersService {
     if (!user) throw new Error('User not authorized');
 
     const userRole = await this.getUserRole(input.workspace_id);
+
     if (!WorkspacePermissions.canManageMembers(userRole)) {
       throw new Error('Only workspace owner and admins can invite members');
     }
@@ -76,7 +77,6 @@ export class WorkspaceMembersService {
       if (existingInvitation.accepted_at) {
         throw new Error('This invitation has already been accepted');
       }
-
       if (new Date(existingInvitation.expires_at) > new Date()) {
         throw new Error('An active invitation for this email already exists');
       }
@@ -90,16 +90,18 @@ export class WorkspaceMembersService {
     const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 7 * 86400000);
 
+    const payload = {
+      workspace_id: input.workspace_id,
+      email: normalizedEmail,
+      role: input.role || 'member',
+      invited_by: user.id,
+      token,
+      expires_at: expiresAt.toISOString(),
+    };
+
     const { data, error } = await supabase
       .from('workspace_invitations')
-      .insert({
-        workspace_id: input.workspace_id,
-        email: normalizedEmail,
-        role: input.role || 'member',
-        invited_by: user.id,
-        token,
-        expires_at: expiresAt.toISOString(),
-      })
+      .insert(payload)
       .select()
       .single();
 
@@ -195,6 +197,12 @@ export class WorkspaceMembersService {
       throw new Error('You cannot remove yourself. Use "Leave workspace" instead.');
     }
 
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .maybeSingle();
+
     const { error } = await supabase
       .from('workspace_members')
       .delete()
@@ -202,6 +210,14 @@ export class WorkspaceMembersService {
       .eq('user_id', userId);
 
     if (error) throw error;
+
+    if (profile?.email) {
+      await supabase
+        .from('workspace_invitations')
+        .delete()
+        .eq('workspace_id', workspaceId)
+        .eq('email', profile.email);
+    }
   }
 
   static async acceptInvitation(token: string) {
