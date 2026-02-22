@@ -2,6 +2,7 @@
   import { computed } from 'vue';
   import { useTimerStore } from '@/stores/timerStore';
   import { TaskStatusUtils } from '@/utils/taskStatus';
+  import { formatRelativeTime } from '@/utils/formatRelativeTime';
   import AppDropdown from '@/components/base/AppDropdown.vue';
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
@@ -38,23 +39,7 @@
 
   const stoppedAtFormatted = computed(() => {
     if (!timerStore.lastSession) return '';
-    const date = new Date(timerStore.lastSession.stoppedAt);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-
-    return date.toLocaleDateString('en-US', { 
-      day: 'numeric', 
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatRelativeTime(timerStore.lastSession.stoppedAt);
   });
 
   const statusColor = computed(() => {
