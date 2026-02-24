@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { ref, onMounted, onBeforeUnmount } from 'vue';
-  import type { WorkspaceMember } from '@/interface/workspace.interface';
+  import type { WorkspaceMember, WorkspaceMemberRole } from '@/interface/workspace.interface';
+  import { WorkspacePermissions } from '@/utils/workspacePermissions';
   import AppContainer from '@/components/base/AppContainer.vue';
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
@@ -10,6 +11,7 @@
 
   interface WorkspaceMemberCardProps {
     member: WorkspaceMember;
+    currentUserRole?: WorkspaceMemberRole;
   }
   defineProps<WorkspaceMemberCardProps>();
 
@@ -55,7 +57,7 @@
                 {{ member.profile?.email }}
               </div>
             </div>
-            <div class="member-card__menu" v-if="member.role !== 'owner'" ref="timerBadgeRef">
+            <div class="member-card__menu" v-if="WorkspacePermissions.canManageMembers(currentUserRole) && member.role !== 'owner'" ref="timerBadgeRef">
               <app-button @click="toggleDropdown">
                 <app-icon 
                   name="three-dots"

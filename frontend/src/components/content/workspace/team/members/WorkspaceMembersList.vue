@@ -10,6 +10,10 @@
 
   const loading = computed(() => workspaceAccessStore.loading);
   const currentWorkspaceId = computed(() => workspaceStore.currentWorkspace?.id);
+  const currentUserRole = computed(() => {
+    if (!currentWorkspaceId.value) return undefined;
+    return workspaceAccessStore.getUserRole(currentWorkspaceId.value);
+  });
 
   const members = computed(() => {
     if (!currentWorkspaceId.value) return [];
@@ -48,7 +52,8 @@
         class="members-list__item"
       >
         <workspace-member-card 
-          :member="member" 
+          :member="member"
+          :current-user-role="currentUserRole"
         />
       </div>
     </div>
