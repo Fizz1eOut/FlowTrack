@@ -19,7 +19,7 @@
   }
 
   function toggleDropdown() {
-    if (hasNotifications.value) {
+    if (notificationStore.notifications.length > 0) {
       active.value = !active.value;
     }
   }
