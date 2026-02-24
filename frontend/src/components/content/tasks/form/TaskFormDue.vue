@@ -80,9 +80,9 @@
     font-weight: var(--fw-normal);
     margin-bottom: var(--space-xs);
   }
-  @media (max-width: 380px) {
+  @media (max-width: 480px) {
     .task-form-due {
-      flex-direction: column;
+      flex-wrap: wrap;
     }
   }
 </style>
