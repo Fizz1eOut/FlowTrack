@@ -29,7 +29,10 @@
 
 <style scoped>
   .notification-list__item:not(:last-child) {
-    border: 1px solid var(--color-gray);
-    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--color-gray);
+    padding-bottom: var(--space-sm);
+  }
+  .notification-list__item:not(:first-child) {
+    padding-top: var(--space-sm);
   }
 </style>
