@@ -189,7 +189,16 @@ export const useAuthStore = defineStore('auth', () => {
         } 
       };
     } catch (err) {
-      const errorMessage = (err as AuthError).message || 'Login error';
+      const rawMessage = (err as AuthError).message ?? '';
+
+      const isInvalidCredentials = 
+      rawMessage.includes('Invalid login credentials') ||
+      rawMessage.includes('Incorrect email or password');
+
+      const errorMessage = isInvalidCredentials
+        ? 'Incorrect email or password'
+        : 'Login error. Please try again later';
+
       error.value = errorMessage;
       return { success: false, error: errorMessage };
     } finally {
