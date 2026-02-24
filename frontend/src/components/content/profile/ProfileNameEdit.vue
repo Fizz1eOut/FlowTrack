@@ -173,6 +173,7 @@
     }
     :deep(.input) {
       height: var(--space-xl);
+      padding: 10px 16px;
     }
     .profile-name-edit__actions {
       display: flex;
