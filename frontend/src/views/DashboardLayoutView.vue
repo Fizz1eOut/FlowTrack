@@ -1,11 +1,27 @@
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { ref, onMounted, onBeforeUnmount } from 'vue';
   import { RouterView } from 'vue-router';
   import AppSidebar from '@/components/base/AppSidebar.vue';
   import AppHeader from '@/components/base/AppHeader.vue';
   import AppContainer from '@/components/base/AppContainer.vue';
 
   const isSidebarOpen = ref(false);
+  const sidebarRef = ref<InstanceType<typeof AppSidebar> | null>(null);
+
+  function handleClickOutside(event: MouseEvent) {
+    const el = sidebarRef.value?.$el as HTMLElement | undefined;
+    if (el && !el.contains(event.target as Node)) {
+      isSidebarOpen.value = false;
+    }
+  }
+
+  onMounted(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+  });
+
+  onBeforeUnmount(() => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  });
 </script>
 
 <template>
@@ -16,6 +32,7 @@
           :is-open="isSidebarOpen" 
           @close="isSidebarOpen = false"
           :class="{ 'sidebar-open': isSidebarOpen }"
+          ref="sidebarRef"
         />
       </div>
       <div class="dashboard-layout__content">
