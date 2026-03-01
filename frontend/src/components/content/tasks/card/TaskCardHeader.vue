@@ -72,6 +72,7 @@
   <div class="task-card-header">
     <div class="task-card-header__field">
       <div class="task-card-header__row" @click.stop> 
+        <div class="task-card-header__number">#{{ task.task_number }}</div>
         <app-checkbox 
           :model-value="isCompleted"
           :disabled="!canCheck"
@@ -100,6 +101,11 @@
 </template>
 
 <style scoped>
+  .task-card-header__number {
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-medium);
+    color: var(--color-black);
+  }
   .task-card-header__field {
     display: flex;
     justify-content: space-between;

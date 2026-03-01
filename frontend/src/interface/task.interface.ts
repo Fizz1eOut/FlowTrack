@@ -37,6 +37,8 @@ export interface TaskResponse {
   original_task_id: string | null;
   previous_status?: TaskStatus;
   actual_minutes?: number
+  task_number: number;
+  assigned_to: string | null;
 }
 
 export interface CreateTaskInput {
@@ -52,6 +54,7 @@ export interface CreateTaskInput {
   is_recurring: boolean;
   original_task_id?: string | null;
   subtasks: string[];
+  assigned_to?: string | null;
 }
 
 export interface UpdateTaskInput {
@@ -68,6 +71,7 @@ export interface UpdateTaskInput {
   original_task_id?: string | null;
   subtasks: string[];
   actual_minutes?: number;
+  assigned_to?: string | null;
 }
 
 export interface CreateSubtaskInput {

@@ -11,10 +11,10 @@ export class TaskService {
     const { data, error } = await supabase
       .from('tasks')
       .select(`
-        *,
-        workspace:workspaces!workspace_id (id, name, type),
-        subtasks (*)
-      `)
+      *,
+      workspace:workspaces!workspace_id (id, name, type),
+      subtasks (*)
+    `)
       .eq('workspace_id', workspaceId)
       .or('is_recurring.eq.false,original_task_id.not.is.null')
       .order('created_at', { ascending: false });
@@ -37,6 +37,7 @@ export class TaskService {
       tags: input.tags || null,
       is_recurring: input.is_recurring || false,
       original_task_id: null,
+      assigned_to: input.assigned_to || null,
     };
 
     const { data: task, error } = await supabase
@@ -74,8 +75,8 @@ export class TaskService {
   }
 
   private static async updateRecurringCopy(
-    copyId: string, 
-    templateId: string, 
+    copyId: string,
+    templateId: string,
     input: UpdateTaskInput
   ): Promise<TaskResponse> {
     const templateData = {
@@ -87,7 +88,8 @@ export class TaskService {
       estimate_minutes: input.estimate_minutes,
       tags: input.tags,
       is_recurring: input.is_recurring,
-      due_date: null
+      due_date: null,
+      assigned_to: input.assigned_to !== undefined ? input.assigned_to : undefined,
     };
 
     const { error: templateError } = await supabase
@@ -109,7 +111,8 @@ export class TaskService {
       priority: input.priority,
       estimate_minutes: input.estimate_minutes,
       tags: input.tags,
-      status: input.status
+      status: input.status,
+      assigned_to: input.assigned_to !== undefined ? input.assigned_to : undefined,
     };
 
     const { data: updatedCopy, error: copyError } = await supabase
@@ -117,10 +120,10 @@ export class TaskService {
       .update(copyData)
       .eq('id', copyId)
       .select(`
-        *,
-        workspace:workspaces!workspace_id (id, name, type),
-        subtasks (*)
-      `)
+      *,
+      workspace:workspaces!workspace_id (id, name, type),
+      subtasks (*)
+    `)
       .single();
 
     if (copyError) throw copyError;
@@ -143,7 +146,8 @@ export class TaskService {
       tags: input.tags,
       is_recurring: input.is_recurring,
       due_date: input.is_recurring ? null : input.due_date,
-      status: input.status
+      status: input.status,
+      assigned_to: input.assigned_to !== undefined ? input.assigned_to : undefined,
     };
 
     const { data: updatedTask, error } = await supabase
@@ -151,10 +155,10 @@ export class TaskService {
       .update(updateData)
       .eq('id', taskId)
       .select(`
-        *,
-        workspace:workspaces!workspace_id (id, name, type),
-        subtasks (*)
-      `)
+      *,
+      workspace:workspaces!workspace_id (id, name, type),
+      subtasks (*)
+    `)
       .single();
 
     if (error) throw error;
@@ -221,10 +225,10 @@ export class TaskService {
     const { data, error } = await supabase
       .from('tasks')
       .select(`
-        *,
-        workspace:workspaces!workspace_id (id, name, type),
-        subtasks (*)
-      `)
+      *,
+      workspace:workspaces!workspace_id (id, name, type),
+      subtasks (*)
+    `)
       .eq('id', taskId)
       .single();
 

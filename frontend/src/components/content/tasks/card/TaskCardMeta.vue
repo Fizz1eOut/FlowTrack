@@ -3,6 +3,7 @@
   import type { TaskResponse } from '@/interface/task.interface';  
   import AppIcon from '@/components/base/AppIcon.vue';
   import TaskCardStatus from '@/components/content/tasks/card/TaskCardStatus.vue';
+  import TaskCardAssignee from '@/components/content/tasks/card/TaskCardAssignee.vue';
 
   interface TaskCardMetaProps {
     task: TaskResponse;
@@ -68,6 +69,7 @@
       </div>
 
       <task-card-status :task-id="task.id" />
+      <task-card-assignee v-if="task.workspace?.type === 'team'" :task="task" />
     </div>
   </div>
 </template>
@@ -95,7 +97,7 @@
     border-radius: var(--radius-md);
     background: var(--gradient-subtle);
   }
-  @media (max-width: 480px) {
+  @media (max-width: 768px) {
     .task-card-meta__group {
       flex-wrap: wrap;
     }
