@@ -133,31 +133,6 @@ export const useWorkspaceStore = defineStore('workspaces', () => {
     }
   }
 
-  async function getWorkspaceWithStats(
-    workspaceId: string
-  ): Promise<WorkspaceResponse> {
-    const workspace = workspaces.value.find(w => w.id === workspaceId);
-    if (!workspace) throw new Error('Workspace not found');
-
-    const stats = await WorkspaceService.getWorkspaceStats(workspaceId);
-
-    return {
-      ...workspace,
-      ...stats,
-    };
-  }
-
-  async function fetchWorkspacesWithStats(): Promise<WorkspaceResponse[]> {
-    await fetchWorkspaces();
-
-    const result = await Promise.all(
-      workspaces.value.map(ws => getWorkspaceWithStats(ws.id))
-    );
-
-    workspaces.value = result;
-    return result;
-  }
-
   return {
     workspaces: readonly(workspaces),
     currentWorkspaceId: readonly(currentWorkspaceId),
@@ -170,12 +145,10 @@ export const useWorkspaceStore = defineStore('workspaces', () => {
     canCreatePersonalWorkspace,
 
     fetchWorkspaces,
-    fetchWorkspacesWithStats,
     createWorkspace,
     updateWorkspace,
     deleteWorkspace,
     setCurrentWorkspace,
     restoreCurrentWorkspace,
-    getWorkspaceWithStats,
   };
 });
