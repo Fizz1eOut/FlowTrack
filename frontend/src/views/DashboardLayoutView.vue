@@ -10,7 +10,11 @@
 
   function handleClickOutside(event: MouseEvent) {
     const el = sidebarRef.value?.$el as HTMLElement | undefined;
-    if (el && !el.contains(event.target as Node)) {
+    const target = event.target as HTMLElement;
+
+    if (target.closest('[data-modal]')) return;
+
+    if (el && !el.contains(target)) {
       isSidebarOpen.value = false;
     }
   }

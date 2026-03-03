@@ -25,7 +25,7 @@
 <template>
   <Teleport to="body">
     <Transition>
-      <div v-if="modelValue" class="modal">
+      <div v-if="modelValue" class="modal" data-modal>
         <div class="overlay" @click.self="close">
           <div class="content">
             <app-underlay>
