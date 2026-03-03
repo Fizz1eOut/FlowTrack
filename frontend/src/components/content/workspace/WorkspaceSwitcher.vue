@@ -1,13 +1,49 @@
 <script setup lang="ts">
-  import { onMounted } from 'vue';
+  import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
   import { useWorkspaceStore } from '@/stores/workspaceStore';
+  import { useWorkspaceAccessStore } from '@/stores/workspaceAccessStore';
+  import { WorkspacePermissions } from '@/utils/workspacePermissions';
+  import { showToast } from '@/stores/toastStore';
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
+  import WorkspaceSwitcherMenu from '@/components/content/workspace/WorkspaceSwitcherMenu.vue';
 
+  const activeMenuId = ref<string | null>(null);
+  const menuRef = ref<HTMLElement | null>(null);
   const workspaceStore = useWorkspaceStore();
+  const workspaceAccessStore = useWorkspaceAccessStore();
 
-  onMounted(async () => {
+  const currentUserRole = computed(() =>
+    workspaceAccessStore.getUserRole(workspaceStore.currentWorkspaceId as string)
+  );
+
+  const canAccessSettings = computed(() =>
+    WorkspacePermissions.canEditWorkspace(currentUserRole.value)
+  );
+
+  const handleDelete = async () => {
+    try {
+      await workspaceStore.deleteWorkspace(workspaceStore.currentWorkspaceId as string);
+      showToast('The workspace was deleted successfully.', 'success');
+    } catch {
+      showToast('Failed to delete the workspace.', 'error');
+    }
+  };
+
+  function handleClickOutside(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (menuRef.value && !menuRef.value.contains(target)) {
+      activeMenuId.value = null;
+    }
+  }
+
+  onMounted(async() => {
     await workspaceStore.fetchWorkspaces();
+    document.addEventListener('click', handleClickOutside);
+  });
+
+  onBeforeUnmount(() => {
+    document.removeEventListener('click', handleClickOutside);
   });
 </script>
 
@@ -17,7 +53,7 @@
       Your workspaces
     </div>
 
-    <div class="workspace-switcher__body">
+    <div class="workspace-switcher__body" ref="menuRef">
       <app-button
         v-if="workspaceStore.personalWorkspace"
         class="workspace-switcher__item"
@@ -56,12 +92,17 @@
 
           {{ ws.name }}
         </div>
-        <app-icon
-          v-if="workspaceStore.currentWorkspaceId === ws.id"
-          name="done"
-          size="var(--fs-sm)"
-          color="var(--color-white)"
-        />
+        <app-button @click.stop="activeMenuId = activeMenuId === ws.id ? null : ws.id"  class="workspace-switcher__menu">
+          <app-icon
+            v-if="workspaceStore.currentWorkspaceId === ws.id"
+            :name="canAccessSettings ? 'three-dots' : 'done'"
+            size="var(--fs-sm)"
+            color="var(--color-white)"
+            class="workspace-switcher__icon"
+          />
+
+          <workspace-switcher-menu v-if="canAccessSettings" :active="activeMenuId === ws.id"  @delete="handleDelete" />
+        </app-button>
       </app-button>
     </div>
   </div>
@@ -97,6 +138,21 @@
   }
   .active {
     background: var(--gradient-accent);
+  }
+  .workspace-switcher__menu {
+    max-width: 20px;
+    position: relative;
+  }
+  .workspace-switcher__icon {
+    transition: transform 0.3s ease-in-out; 
+  }
+  .workspace-switcher__icon:hover {
+    transform: rotate(90deg); 
+  }
+  :deep(.dropdown) {
+    width: auto;
+    right: 0;
+    left: unset;
   }
 </style>
 
