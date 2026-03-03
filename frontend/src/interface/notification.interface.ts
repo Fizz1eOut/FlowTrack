@@ -3,10 +3,8 @@ export type NotificationType =
   | 'task_assigned'
   | 'task_deadline'
   | 'task_completed'
-  | 'invitation_accepted'
   | 'member_joined'
-  | 'mention'
-  | 'system';
+  | 'mention';
 
 export interface BaseNotificationData {
   [key: string]: unknown;
@@ -31,6 +29,15 @@ export interface InvitationAcceptedData extends BaseNotificationData {
   workspace_name: string;
   accepted_by: string;
   accepted_by_email: string;
+}
+
+export interface TaskAssignedData extends BaseNotificationData {
+  task_id: string;
+  task_title: string;
+  workspace_id: string;
+  workspace_name: string;
+  assigned_by: string;
+  assigned_by_name: string;
 }
 
 export interface Notification {
