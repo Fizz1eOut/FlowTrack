@@ -18,15 +18,11 @@
 
   const menuItems = [
     { name: 'Today', icon: 'calendar-today', path: '/dashboard/today' },
-    { name: 'Inbox', icon: 'inbox', path: '/dashboard/inbox' },
     { name: 'Tasks', icon: 'tasks', path: '/dashboard/tasks' },
-    { name: 'Projects', icon: 'project', path: '/dashboard/projects' },
+    { name: 'Kanban Board', icon: 'kanban-board', path: '/dashboard/kanban' },
     { name: 'Calendar', icon: 'calendar', path: '/dashboard/calendar' },
     { name: 'Analytics', icon: 'analytics', path: '/dashboard/analytics' },
-    { name: 'Goals', icon: 'target', path: '/dashboard/goals' },
     { name: 'Team', icon: 'team', path: '/dashboard/team' },
-    { name: 'Documents', icon: 'file-text', path: '/dashboard/docs' },
-    { name: 'Settings', icon: 'settings', path: '/dashboard/settings' },
   ];
 
   const handleClick = (path: string) => {
