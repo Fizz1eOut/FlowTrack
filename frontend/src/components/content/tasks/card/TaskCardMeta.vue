@@ -79,6 +79,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
   }
   .task-card-meta__workspace {
     font-size: var(--fs-md);
@@ -96,10 +97,5 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--gradient-subtle);
-  }
-  @media (max-width: 768px) {
-    .task-card-meta__group {
-      flex-wrap: wrap;
-    }
   }
 </style>
