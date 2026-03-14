@@ -1,6 +1,16 @@
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 export type TaskStatus = 'backlog' | 'in_progress' | 'done' | 'planned' | 'archived';
 
+export interface Filters {
+  tags: string[]
+  statuses: TaskStatus[]
+  priorities: TaskPriority[]
+  assigned: string[]
+  isRecurring: boolean
+  hasSubtasks: boolean
+  dateRange: string | null,
+}
+
 export interface Subtask {
   id: string;
   task_id: string;
