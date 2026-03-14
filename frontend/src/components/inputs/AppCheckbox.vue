@@ -82,7 +82,6 @@
   }
   .checkbox .checkbox__body {
     color: var(--color-black);
-    font-weight: var(--fw-medium);
     font-size: var(--fs-sm);
     }
 </style>
