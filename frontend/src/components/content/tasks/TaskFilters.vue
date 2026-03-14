@@ -69,7 +69,7 @@
           </app-checkbox>
         </div>
 
-        <div v-if="assigned" class="filter-group__priority filter-group__item">
+        <div v-if="assigned.length > 0" class="filter-group__priority filter-group__item">
           <div class="filter-group__name">Assigned</div>
           <app-checkbox
             v-for="a in assigned"
@@ -171,7 +171,6 @@
   .tags__group {
     display: flex;
     flex-wrap: wrap;
-    max-width: 300px;
     row-gap: 10px;
     margin-bottom: var(--space-xs);
   }
@@ -190,19 +189,24 @@
     transition: box-shadow 0.3s ease-in-out, background-color 0.3s ease-in-out, color 0.3s ease-in-out;
   }
   .tags.active {
-      background-color: var(--primary);
-      color: var(--color-white);
-      box-shadow: var(--shadow-glow);
+    background-color: var(--primary);
+    color: var(--color-white);
+    box-shadow: var(--shadow-glow);
   }
   .filter-group__content:not(:last-child) {
-      margin-bottom: var(--space-xs);
+    margin-bottom: var(--space-xs);
   }
-  @media (max-width: 968px) {
+  @media (max-width: 960px) {
     .filter-group__item {
       flex: 1 0 auto;
     }
     .filter-group__item:not(:last-child) {
       border-right: none;
+    }
+  }
+  @media (max-width: 768px) {
+    .filter-group__item {
+      flex: 0 1 auto;
     }
   }
   @media (max-width: 400px) {
