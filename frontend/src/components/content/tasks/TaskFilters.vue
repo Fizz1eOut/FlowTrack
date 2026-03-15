@@ -18,7 +18,6 @@
     { value: 'overdue',    label: 'Overdue' },
     { value: 'today',      label: 'Today' },
     { value: 'this_week',  label: 'This week' },
-    { value: 'this_month', label: 'This month' },
   ];
 
   function toggleArray(key: | 'tags' | 'statuses' | 'priorities' | 'assigned', value: string) {
