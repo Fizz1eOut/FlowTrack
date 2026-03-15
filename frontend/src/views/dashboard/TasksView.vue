@@ -1,8 +1,10 @@
 <script setup lang="ts">
-  import { onMounted, ref, computed } from 'vue';
+  import { onMounted, ref, computed, watch } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
   import { useTasksStore } from '@/stores/taskStore';
   import { useProfileStore } from '@/stores/profileStore';
-  import type { Filters } from '@/interface/task.interface';
+  import type { TaskStatus, TaskPriority, Filters } from '@/interface/task.interface';
+  import type { LocationQueryValue } from 'vue-router';
   import AppSubtitle from '@/components/base/AppSubtitle.vue';
   import AppLoadingSpinner from '@/components/base/AppLoadingSpinner.vue';
   import TaskFilters from '@/components/content/tasks/TaskFilters.vue';
@@ -10,16 +12,37 @@
   
   const profileStore = useProfileStore();
   const taskStore = useTasksStore();
+  const route  = useRoute();
+  const router = useRouter();
+
+  function queryToArray(val: LocationQueryValue | LocationQueryValue[] | undefined): string[] {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.filter((v): v is string => v !== null);
+    return [val];
+  }
 
   const filters = ref<Filters>({
-    tags: [],
-    statuses: [],
-    priorities: [],
-    assigned: [],
-    isRecurring: false,
-    hasSubtasks: false,
-    dateRange: null,
+    tags: queryToArray(route.query.tags),  
+    statuses: queryToArray(route.query.statuses) as TaskStatus[],
+    priorities: queryToArray(route.query.priorities) as TaskPriority[],
+    assigned: queryToArray(route.query.assigned),
+    isRecurring: route.query.isRecurring === 'true',
+    hasSubtasks: route.query.hasSubtasks === 'true',
+    dateRange:   (route.query.dateRange as string) ?? null,
   });
+
+  watch(filters, (val) => {
+    const q: Record<string, string | string[]> = {};  
+    if (val.tags.length) q.tags = val.tags;
+    if (val.statuses.length) q.statuses = val.statuses;
+    if (val.priorities.length) q.priorities = val.priorities;
+    if (val.assigned.length) q.assigned = val.assigned;
+    if (val.isRecurring) q.isRecurring = 'true';
+    if (val.hasSubtasks) q.hasSubtasks = 'true';
+    if (val.dateRange) q.dateRange = val.dateRange;
+    router.replace({ query: q });
+  }, { deep: true });
+
   const availableTags = computed(() =>
     [...new Set(taskStore.tasks.flatMap(t => t.tags || []))]
   );
