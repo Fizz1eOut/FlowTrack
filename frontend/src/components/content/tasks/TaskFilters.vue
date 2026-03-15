@@ -192,7 +192,7 @@
     color: var(--color-white);
     box-shadow: var(--shadow-glow);
   }
-  .filter-group__content:not(:last-child) {
+  .filter-group__content {
     margin-bottom: var(--space-xs);
   }
   @media (max-width: 960px) {
