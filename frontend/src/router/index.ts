@@ -15,6 +15,7 @@ import TeamView from '@/views/dashboard/TeamView.vue';
 import KanbanBoard from '@/views/dashboard/KanbanBoard.vue';
 import TasksView from '@/views/dashboard/TasksView.vue';
 import AcceptInvitationView from '@/views/AcceptInvitationView.vue';
+import CalendarView from '@/views/dashboard/CalendarView.vue';
 
 const scrollBehavior: RouterScrollBehavior = (to, from, savedPosition) => {
   if (savedPosition) {
@@ -44,7 +45,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'team', name: 'team', component: TeamView, meta: { title: 'Team' } },
       { path: 'tasks', name: 'tasks', component: TasksView, meta: { title: 'Tasks' } },
       { path: 'kanban', name: 'kanban', component: KanbanBoard, meta: { title: 'Kanban Board' } },
-
+      { path: 'calendar', name: 'calendar', component: CalendarView, meta: { title: 'Calendar' } },
     ],
   },
   
