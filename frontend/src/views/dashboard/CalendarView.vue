@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, computed, watch } from 'vue';
+  import { ref, computed, watch, onMounted } from 'vue';
   import FullCalendar from '@fullcalendar/vue3';
   import timeGridPlugin from '@fullcalendar/timegrid';
   import interactionPlugin from '@fullcalendar/interaction';
@@ -193,6 +193,15 @@
     api.removeAllEvents();
     api.addEventSource(newEvents);
   }, { deep: true });
+
+  onMounted(() => {
+    setTimeout(() => {
+      const api = getApi();
+      if (!api || !calendarEvents.value.length) return;
+      api.removeAllEvents();
+      api.addEventSource(calendarEvents.value);
+    }, 0);
+  });
 
   watch(
     () => workspaceStore.currentWorkspaceId,
