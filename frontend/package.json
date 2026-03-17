@@ -21,12 +21,14 @@
     "@fullcalendar/timegrid": "^6.1.20",
     "@fullcalendar/vue3": "^6.1.20",
     "@supabase/supabase-js": "^2.76.1",
+    "apexcharts": "^5.10.4",
     "moment-timezone": "^0.6.0",
     "pinia": "^3.0.3",
     "vee-validate": "^4.15.1",
     "vue": "^3.5.22",
     "vue-draggable-plus": "^0.6.1",
     "vue-router": "^4.6.3",
+    "vue3-apexcharts": "^1.11.1",
     "yup": "^1.7.1"
   },
   "devDependencies": {
