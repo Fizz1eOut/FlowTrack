@@ -1,8 +1,9 @@
 <script setup lang="ts">
+  import { useTasksStore } from '@/stores/taskStore';
   import AppSubtitle from '@/components/base/AppSubtitle.vue';
   import ProgressSection from '@/components/content/progress/ProgressSection.vue';
   import AnalyticsTaskChart from '@/components/content/analytics/AnalyticsTaskChart.vue';
-  import { useTasksStore } from '@/stores/taskStore';
+  import AnalyticsDeadlineChart from '@/components/content/analytics/AnalyticsDeadlineChart.vue';
   
   const taskStore = useTasksStore();
 </script>
@@ -17,15 +18,36 @@
     </div>
     <div class="analytics__body">
       <progress-section />
-      <analytics-task-chart 
-        v-if="!taskStore.loading && taskStore.tasks.length"
-        :task="taskStore.tasks" 
-      />
+      <div class="analytics__chart">
+        <div class="analytics__item">
+          <analytics-task-chart 
+            v-if="!taskStore.loading && taskStore.tasks.length"
+            :task="taskStore.tasks" 
+          />
+        </div>
+        <div class="analytics__item">
+          <analytics-deadline-chart  
+            v-if="!taskStore.loading && taskStore.tasks.length" 
+            :task="taskStore.tasks"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+  .analytics__header {
+    margin-bottom: var(--space-2xl)
+  }
+  .analytics__chart {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .analytics__item {
+    width: 100%;
+  }
   :deep(.progress-section__items) {
     display: flex;
     justify-content: space-between;
@@ -35,6 +57,11 @@
   }
   :deep(.progress-section__item) {
     width: 100%;
+  }
+  @media (max-width: 1024px) {
+    .analytics__chart {
+      flex-direction: column;
+    }
   }
   @media (max-width: 768px) {
     :deep(.progress-section__items) {
