@@ -4,6 +4,7 @@
   import ProgressSection from '@/components/content/progress/ProgressSection.vue';
   import AnalyticsTaskChart from '@/components/content/analytics/AnalyticsTaskChart.vue';
   import AnalyticsDeadlineChart from '@/components/content/analytics/AnalyticsDeadlineChart.vue';
+  import AnalyticsTeamChart from '@/components/content/analytics/AnalyticsTeamChart.vue';
   
   const taskStore = useTasksStore();
 </script>
@@ -32,6 +33,7 @@
           />
         </div>
       </div>
+      <analytics-team-chart />
     </div>
   </div>
 </template>
