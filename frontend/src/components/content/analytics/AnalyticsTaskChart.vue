@@ -62,8 +62,6 @@
     { name: 'Planned', data: weeklyData.value.planned },
   ]);
   
-  console.log(series.value);
-  console.log(props.task.map(t => ({ created_at: t.created_at, completed_at: t.completed_at })));
   const options = computed(() => ({
     chart: {
       type: 'line' as const,
