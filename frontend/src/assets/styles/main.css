@@ -40,6 +40,12 @@ body {
   height: 100%;
 }
 
+html,
+body {
+  height: 100%;
+  background-color: var(--background) !important;
+}
+
 body {
   background-color: var(--background);
   font-size: var(--fs-sm);

@@ -1,4 +1,9 @@
 :root {
+  --background: #ffffff;
+  --text-primary: #0b1222;
+  --text-secondary: #6c757d;
+  --underlay: #f4f5f7;
+
   /* === Colors === */
   --color-white: #ffffff;
   --color-black: #0b1222;
