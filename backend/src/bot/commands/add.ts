@@ -17,17 +17,16 @@ const statusOptions = [
   { label: '⚡ In Progress', value: 'in_progress' },
 ];
 
-function getDueDateFromOption(option: string): string | null {
+function getDateFromOption(option: string): Date | null {
   const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  if (option === 'today') return today.toISOString();
+  if (option === 'today') return today;
   if (option === 'tomorrow') {
     today.setDate(today.getDate() + 1);
-    return today.toISOString();
+    return today;
   }
   if (option === 'week') {
     today.setDate(today.getDate() + 7);
-    return today.toISOString();
+    return today;
   }
   return null;
 }
@@ -43,7 +42,7 @@ async function addTaskConversation(conversation: MyConversation, ctx: MyContext)
   let title = (typeof match === 'string' ? match : match?.[0] ?? '').trim();
 
   if (!title) {
-    await ctx.reply('📝 *Step 1/5* — Enter task title:', { parse_mode: 'Markdown' });
+    await ctx.reply('📝 *Step 1/6* — Enter task title:', { parse_mode: 'Markdown' });
     const titleCtx = await conversation.wait();
     title = titleCtx.message?.text?.trim() ?? '';
     if (!title) { await ctx.reply('❌ Title is required. Task not created.'); return; }
@@ -55,7 +54,7 @@ async function addTaskConversation(conversation: MyConversation, ctx: MyContext)
   }
 
   await ctx.reply(
-    `📝 *${title}*\n\n🎯 *Step 2/5* — Select priority:`,
+    `📝 *${title}*\n\n🎯 *Step 2/6* — Select priority:`,
     { parse_mode: 'Markdown', reply_markup: priorityKeyboard }
   );
 
@@ -70,7 +69,7 @@ async function addTaskConversation(conversation: MyConversation, ctx: MyContext)
   }
 
   await priorityCtx.editMessageText(
-    `📝 *${title}*\n${priorityLabel}\n\n📌 *Step 3/5* — Select status:`,
+    `📝 *${title}*\n${priorityLabel}\n\n📌 *Step 3/6* — Select status:`,
     { parse_mode: 'Markdown', reply_markup: statusKeyboard }
   );
 
@@ -80,21 +79,44 @@ async function addTaskConversation(conversation: MyConversation, ctx: MyContext)
   await statusCtx.answerCallbackQuery();
 
   const dateKeyboard = new InlineKeyboard()
-    .text('📅 Today',     'date:today')
-    .text('📅 Tomorrow',  'date:tomorrow').row();
+    .text('📅 Today',    'date:today')
+    .text('📅 Tomorrow', 'date:tomorrow').row()
+    .text('📆 This week', 'date:week');
 
   await statusCtx.editMessageText(
-    `📝 *${title}*\n${priorityLabel} · ${statusLabel}\n\n📅 *Step 4/5* — Select due date:`,
+    `📝 *${title}*\n${priorityLabel} · ${statusLabel}\n\n📅 *Step 4/6* — Select due date:`,
     { parse_mode: 'Markdown', reply_markup: dateKeyboard }
   );
 
   const dateCtx = await conversation.waitForCallbackQuery(/^date:/);
   const dateValue = dateCtx.callbackQuery.data.split(':')[1];
-  const dueDate = getDueDateFromOption(dateValue);
-  const dueDateLabel = dueDate
-    ? `📅 ${new Date(dueDate).toLocaleDateString('en', { day: '2-digit', month: 'short', year: 'numeric' })}`
-    : '—';
+  const selectedDate = getDateFromOption(dateValue);
+  const dateLabel = selectedDate
+    ? selectedDate.toLocaleDateString('en', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '';
   await dateCtx.answerCallbackQuery();
+
+  const timeKeyboard = new InlineKeyboard()
+    .text('09:00', 'time:9')
+    .text('12:00', 'time:12').row()
+    .text('15:00', 'time:15')
+    .text('18:00', 'time:18').row()
+    .text('20:00', 'time:20')
+    .text('22:00', 'time:22');
+
+  await dateCtx.editMessageText(
+    `📝 *${title}*\n${priorityLabel} · ${statusLabel} · 📅 ${dateLabel}\n\n⏰ *Step 5/6* — Select time:`,
+    { parse_mode: 'Markdown', reply_markup: timeKeyboard }
+  );
+
+  const timeCtx = await conversation.waitForCallbackQuery(/^time:/);
+  const hours = parseInt(timeCtx.callbackQuery.data.split(':')[1]);
+  await timeCtx.answerCallbackQuery();
+
+  const finalDate = selectedDate ?? new Date();
+  finalDate.setHours(hours, 0, 0, 0);
+  const dueDate = finalDate.toISOString();
+  const dueDateLabel = `📅 ${dateLabel} ${String(hours).padStart(2, '0')}:00`;
 
   const workspaces = await conversation.external(() => fetchUserWorkspaces(user.id));
   let workspaceId = user.default_workspace_id;
@@ -108,8 +130,8 @@ async function addTaskConversation(conversation: MyConversation, ctx: MyContext)
       wsKeyboard.text(`${icon} ${workspace.name}`, `ws:${workspace.id}:${workspace.name}`).row();
     }
 
-    await dateCtx.editMessageText(
-      `📝 *${title}*\n${priorityLabel} · ${statusLabel} · ${dueDateLabel}\n\n📁 *Step 5/5* — Select workspace:`,
+    await timeCtx.editMessageText(
+      `📝 *${title}*\n${priorityLabel} · ${statusLabel} · ${dueDateLabel}\n\n📁 *Step 6/6* — Select workspace:`,
       { parse_mode: 'Markdown', reply_markup: wsKeyboard }
     );
 
@@ -119,18 +141,12 @@ async function addTaskConversation(conversation: MyConversation, ctx: MyContext)
     workspaceName = wsParts.slice(2).join(':');
     await wsCtx.answerCallbackQuery();
 
-    await wsCtx.editMessageText(
-      `⏳ Creating task *${title}*...`,
-      { parse_mode: 'Markdown' }
-    );
+    await wsCtx.editMessageText(`⏳ Creating task *${title}*...`, { parse_mode: 'Markdown' });
   } else {
     const ws = workspaces[0] as { id: string; name: string } | undefined;
     if (ws) { workspaceId = ws.id; workspaceName = ws.name; }
 
-    await dateCtx.editMessageText(
-      `⏳ Creating task *${title}*...`,
-      { parse_mode: 'Markdown' }
-    );
+    await timeCtx.editMessageText(`⏳ Creating task *${title}*...`, { parse_mode: 'Markdown' });
   }
 
   const { data: task, error } = await conversation.external(() =>
@@ -142,7 +158,7 @@ async function addTaskConversation(conversation: MyConversation, ctx: MyContext)
         priority,
         workspace_id: workspaceId,
         user_id: user.id,
-        ...(dueDate && { due_date: dueDate }),
+        due_date: dueDate,
       })
       .select('id, task_number, title')
       .single()
@@ -156,18 +172,16 @@ async function addTaskConversation(conversation: MyConversation, ctx: MyContext)
     '',
     `📌 ${task?.title ?? title}`,
     task?.task_number ? `🔢 #${task.task_number}` : '',
-    `${priorityLabel}`,
-    `${statusLabel}`,
-    dueDate ? `📅 ${new Date(dueDate).toLocaleDateString('en', { day: '2-digit', month: 'short', year: 'numeric' })}` : '',
+    priorityLabel,
+    statusLabel,
+    dueDateLabel,
     `📁 ${workspaceName}`,
   ].filter(Boolean).join('\n');
 
-  await ctx.api.editMessageText(
-    ctx.chat?.id ?? 0,
-    (await conversation.external(() => Promise.resolve(ctx.msg?.message_id ?? 0))),
+  await ctx.reply(
     error ? '❌ Failed to create task.' : summary,
     { parse_mode: 'Markdown' }
-  ).catch(() => ctx.reply(error ? '❌ Failed to create task.' : summary, { parse_mode: 'Markdown' }));
+  );
 }
 
 export function registerAdd(bot: Bot<MyContext>): void {
