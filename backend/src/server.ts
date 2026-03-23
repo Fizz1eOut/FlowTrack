@@ -18,6 +18,9 @@ app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
 
-const bot = createBot();
-bot.start();
-console.log('🤖 FlowTrack bot started');
+createBot().then(bot => {
+  bot.start();
+  console.log('🤖 FlowTrack bot started');
+}).catch(err => {
+  console.error('Failed to start bot:', err);
+});
