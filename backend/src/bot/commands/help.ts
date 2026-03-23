@@ -8,6 +8,7 @@ async function handleHelp(ctx: MyContext): Promise<void> {
     '/today — tasks due today\n' +
     '/add <title> — create a task\n' +
     '/done <id> — complete a task\n' +
+    '/progress — view your level and stats\n' +
     '/app — open the app',
     { parse_mode: 'Markdown' }
   );
