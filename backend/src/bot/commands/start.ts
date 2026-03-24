@@ -29,12 +29,13 @@ export function registerStart(bot: Bot<MyContext>): void {
   bot.hears('📌 All commands', async ctx => {
     await ctx.reply(
       '🚀 *Available commands:*\n\n' +
-      '/tasks — list active tasks\n' +
-      '/today — tasks due today\n' +
-      '/add <title> — create a task\n' +
-      '/done <id> — complete a task\n' +
-      '/app — open the app\n' +
-      '/help — show this message',
+    '/timer <id> — start a focus timer\n' +
+    '/tasks — list active tasks\n' +
+    '/today — tasks due today\n' +
+    '/add <title> — create a task\n' +
+    '/done <id> — complete a task\n' +
+    '/progress — view your level and stats\n' +
+    '/app — open the app',
       { parse_mode: 'Markdown' }
     );
   });

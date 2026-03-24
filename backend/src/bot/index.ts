@@ -1,5 +1,6 @@
 import { Bot } from 'grammy';
 import { registerProgress } from './commands/progress';
+import { registerTimer } from './commands/timer';
 import { conversations } from '@grammyjs/conversations';
 import { type MyContext } from './types';
 import { registerStart } from './commands/start';
@@ -12,8 +13,7 @@ import { registerDone } from './commands/done';
 export async function createBot(): Promise<Bot<MyContext>> {
   const botToken = process.env.BOT_TOKEN ?? '';
   const bot = new Bot<MyContext>(botToken);
-  registerProgress(bot);
-
+  
   bot.use(conversations());
 
   registerStart(bot);
@@ -22,16 +22,19 @@ export async function createBot(): Promise<Bot<MyContext>> {
   registerToday(bot);
   registerAdd(bot);
   registerDone(bot);
+  registerTimer(bot);
+  registerProgress(bot);
 
   bot.catch((err) => console.error('Bot error:', err));
 
   await bot.api.setMyCommands([
+    { command: 'timer', description: 'Start a focus timer for a task' },
     { command: 'tasks',  description: 'List active tasks' },
     { command: 'today',  description: 'Tasks due today' },
     { command: 'add',    description: 'Create a task' },
     { command: 'done',   description: 'Complete a task' },
-    { command: 'app',    description: 'Open FlowTrack' },
     { command: 'progress', description: 'View your level and stats' },
+    { command: 'app',    description: 'Open FlowTrack' },
     { command: 'help',   description: 'Show all commands' },
   ]);
 

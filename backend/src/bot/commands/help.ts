@@ -4,6 +4,7 @@ import { type MyContext } from '../types';
 async function handleHelp(ctx: MyContext): Promise<void> {
   await ctx.reply(
     '🚀 *Available commands:*\n\n' +
+    '/timer <id> — start a focus timer\n' +
     '/tasks — list active tasks\n' +
     '/today — tasks due today\n' +
     '/add <title> — create a task\n' +
