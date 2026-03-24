@@ -82,7 +82,7 @@
       left: 0;
       top: 0;
       height: 100vh;
-      z-index: 1000;
+      z-index: 10;
       width: 240px;
       transform: translateX(-100%);
       transition: transform 0.25s ease;

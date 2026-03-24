@@ -1,7 +1,6 @@
 <script setup lang="ts">
   import AppButton from '@/components/base/AppButton.vue';
   import AppIcon from '@/components/base/AppIcon.vue';
-  import AppSearch from '@/components/base/AppSearch.vue';
   import TimerBadge from '@/components/content/timer/TimerBadge.vue';
   import AppNotificationBell from '@/components/base/AppNotificationBell.vue';
   import AppProfile from '@/components/base/AppProfile.vue';
@@ -22,9 +21,6 @@
               color="var(--color-black)"
             />
           </app-button>
-        </div>
-        <div class="header__search">
-          <app-search />
         </div>
       </div>
 
