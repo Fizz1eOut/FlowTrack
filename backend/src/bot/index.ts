@@ -10,6 +10,7 @@ import { registerToday } from './commands/today';
 import { registerAdd } from './commands/add';
 import { registerDone } from './commands/done';
 import { startNotificationListener } from './helpers/notifications';
+import { startDailyDigest } from './helpers/dailyDigest';
 
 export async function createBot(): Promise<Bot<MyContext>> {
   const botToken = process.env.BOT_TOKEN ?? '';
@@ -40,6 +41,7 @@ export async function createBot(): Promise<Bot<MyContext>> {
   ]);
 
   startNotificationListener(bot);
+  startDailyDigest(bot);
 
   return bot;
 }
