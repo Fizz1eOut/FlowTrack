@@ -64,7 +64,7 @@ async function handleProgress(ctx: MyContext): Promise<void> {
   const percentage = neededXP > 0 ? Math.round((progressXP / neededXP) * 100) : 100;
 
   const barLength = 10;
-  const filled = Math.round((percentage / 100) * barLength);
+  const filled = Math.min(barLength, Math.max(0, Math.round((percentage / 100) * barLength)));
   const progressBar = '🟩'.repeat(filled) + '⬜'.repeat(barLength - filled);
 
   const { data: completions } = await supabase
