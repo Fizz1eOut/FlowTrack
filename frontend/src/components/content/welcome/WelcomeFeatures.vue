@@ -45,9 +45,9 @@
               <div class="welcome-features__icon icon-success">
                 <app-icon name="trending-up" size="28" color="var(--success)" />
               </div>
-              <app-subtitle>AI-powered planning</app-subtitle>
+              <app-subtitle>Smart daily planning</app-subtitle>
               <p class="welcome-features__text">
-                Let AI craft the optimal daily plan based on your tasks and priorities.
+                Create an optimal daily plan based on your tasks and priorities.
               </p>
             </div>
           </app-container>
