@@ -11,8 +11,9 @@
   import { useTimerStore } from '@/stores/timerStore';
   import { useTelegram } from '@/composables/useTelegram';
   import { linkTelegramAccount } from '@/services/telegramLink.service';
+  import { useRoute } from 'vue-router';
 
-
+  const route = useRoute();
   const authStore = useAuthStore();
   const workspaceStore = useWorkspaceStore();
   const taskStore = useTasksStore();
@@ -55,7 +56,10 @@
       <app-toast />
     </app-container>
   </main>
-  <task-create-modal variant="fab" />
+  <task-create-modal 
+    v-if="route.path.startsWith('/dashboard')" 
+    variant="fab" 
+  />
 </template>
 
 <style scoped>
