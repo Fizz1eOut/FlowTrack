@@ -55,9 +55,14 @@ export class TaskService {
 
     let taskToReturn = task;
     if (input.is_recurring) {
-      const todayCopy = await RecurringTaskService.createTodayCopy(task.id);
-      if (todayCopy) {
-        taskToReturn = todayCopy;
+      const todayDow = new Date().getDay();
+      const shouldCreateToday = !input.recurring_days?.length || input.recurring_days.includes(todayDow);
+
+      if (shouldCreateToday) {
+        const todayCopy = await RecurringTaskService.createTodayCopy(task.id);
+        if (todayCopy) {
+          taskToReturn = todayCopy;
+        }
       }
     }
 
@@ -170,6 +175,9 @@ export class TaskService {
 
     if (input.is_recurring) {
       const today = new Date().toISOString().split('T')[0];
+      const todayDow = new Date().getDay();
+      const shouldCreateToday = !input.recurring_days?.length || input.recurring_days.includes(todayDow);
+
       await supabase
         .from('tasks')
         .delete()
@@ -177,7 +185,9 @@ export class TaskService {
         .gte('due_date', `${today}T00:00:00.000Z`)
         .lt('due_date', `${today}T23:59:59.999Z`);
 
-      await RecurringTaskService.createTodayCopy(taskId);
+      if (shouldCreateToday) {
+        await RecurringTaskService.createTodayCopy(taskId);
+      }
     }
 
     return updatedTask;
