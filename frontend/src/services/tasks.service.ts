@@ -38,6 +38,7 @@ export class TaskService {
       is_recurring: input.is_recurring || false,
       original_task_id: null,
       assigned_to: input.assigned_to || null,
+      recurring_days: input.recurring_days?.length ? input.recurring_days : null,
     };
 
     const { data: task, error } = await supabase
