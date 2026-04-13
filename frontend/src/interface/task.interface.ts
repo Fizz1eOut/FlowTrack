@@ -49,6 +49,7 @@ export interface TaskResponse {
   actual_minutes?: number
   task_number: number;
   assigned_to: string | null;
+  recurring_days?: number[] | null;
 }
 
 export interface CreateTaskInput {
@@ -65,6 +66,7 @@ export interface CreateTaskInput {
   original_task_id?: string | null;
   subtasks: string[];
   assigned_to?: string | null;
+  recurring_days?: number[] | null;
 }
 
 export interface UpdateTaskInput {
@@ -82,6 +84,7 @@ export interface UpdateTaskInput {
   subtasks: string[];
   actual_minutes?: number;
   assigned_to?: string | null;
+  recurring_days?: number[] | null;
 }
 
 export interface CreateSubtaskInput {

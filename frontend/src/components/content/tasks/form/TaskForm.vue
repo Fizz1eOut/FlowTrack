@@ -36,7 +36,9 @@
     estimate_minutes: props.task?.estimate_minutes || 120,
     tags: props.task?.tags || [],
     is_recurring: props.task?.is_recurring || false,
-    subtasks: props.task?.subtasks?.map(s => s.title) || []
+    subtasks: props.task?.subtasks?.map(s => s.title) || [],
+    recurring_days: props.task?.recurring_days?.length ? props.task.recurring_days : null,
+
   });
 
   const submitData = computed<CreateTaskInput>(() => {
@@ -122,7 +124,8 @@
 
       <div class="task-form__item">
         <task-form-recurring 
-          v-model="formData.is_recurring" 
+          v-model="formData.is_recurring"
+          v-model:recurring-days="formData.recurring_days"
         />
       </div>
 

@@ -42,7 +42,8 @@ export class RecurringTaskService {
         estimate_minutes: templateTask.estimate_minutes,
         tags: templateTask.tags,
         is_recurring: true,
-        original_task_id: templateTaskId
+        original_task_id: templateTaskId,
+        recurring_days: templateTask.recurring_days,
       })
       .select()
       .single();
@@ -77,7 +78,12 @@ export class RecurringTaskService {
     if (error) throw error;
     if (!recurringTasks || recurringTasks.length === 0) return;
 
+    const todayDow = new Date().getDay();
+
     for (const task of recurringTasks) {
+      if (task.recurring_days && task.recurring_days.length > 0) {
+        if (!task.recurring_days.includes(todayDow)) continue;
+      }
       await this.createTodayCopy(task.id);
     }
   }
