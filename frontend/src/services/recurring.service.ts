@@ -78,12 +78,23 @@ export class RecurringTaskService {
     if (error) throw error;
     if (!recurringTasks || recurringTasks.length === 0) return;
 
+    const today = new Date().toISOString().split('T')[0];
     const todayDow = new Date().getDay();
 
     for (const task of recurringTasks) {
-      if (task.recurring_days && task.recurring_days.length > 0) {
-        if (!task.recurring_days.includes(todayDow)) continue;
+      const shouldRunToday = !task.recurring_days?.length || task.recurring_days.includes(todayDow);
+
+      if (!shouldRunToday) {
+      // Delete stale copy if it exists for today
+        await supabase
+          .from('tasks')
+          .delete()
+          .eq('original_task_id', task.id)
+          .gte('due_date', `${today}T00:00:00.000Z`)
+          .lt('due_date', `${today}T23:59:59.999Z`);
+        continue;
       }
+
       await this.createTodayCopy(task.id);
     }
   }
