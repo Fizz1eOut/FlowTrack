@@ -36,6 +36,7 @@ async function createTodayCopy(templateTaskId: string): Promise<void> {
       tags: template.tags,
       is_recurring: true,
       original_task_id: templateTaskId,
+      recurring_days: template.recurring_days,
     });
 
   if (insertError && insertError.code !== '23505') {
@@ -46,13 +47,33 @@ async function createTodayCopy(templateTaskId: string): Promise<void> {
 export async function checkAndCreateRecurringCopies(userId: string): Promise<void> {
   const { data: templates, error } = await supabase
     .from('tasks')
-    .select('id')
+    .select('id, recurring_days')
     .eq('user_id', userId)
     .eq('is_recurring', true)
     .is('original_task_id', null);
 
   if (error || !templates?.length) return;
+  
+  const todayDow = new Date().getDay();
+  const today = new Date().toISOString().split('T')[0];
 
-  await Promise.allSettled(templates.map(t => createTodayCopy(t.id)));
+  await Promise.allSettled(
+    templates.map(async (t) => {
+      const shouldRunToday = !t.recurring_days?.length || t.recurring_days.includes(todayDow);
+
+      if (!shouldRunToday) {
+        await supabase
+          .from('tasks')
+          .delete()
+          .eq('original_task_id', t.id)
+          .gte('due_date', `${today}T00:00:00.000Z`)
+          .lt('due_date', `${today}T23:59:59.999Z`);
+        return;
+      }
+
+      await createTodayCopy(t.id);
+    })
+  );
+
   console.log(`[Recurring] Checked ${templates.length} recurring tasks for user ${userId}`);
 }
